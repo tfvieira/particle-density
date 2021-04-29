@@ -1,0 +1,20 @@
+{
+    "CROP_RECTANGLE": [
+        850,
+        650,
+        800,
+        800
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "..\\dataset\\30 microns-beads-60X-measuring 2\\30 microns-beads-60X-measuring 2.tif",
+    "INPUT_PATH": "..\\dataset\\30 microns-beads-60X-measuring 2",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": null,
+    "N_IMAGES": 22,
+    "OUTPUT_PATH": "..\\results\\30 microns-beads-60X-measuring 2",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": null,
+    "TITLE":"30 microns-beads-60X-measuring 2"
+}

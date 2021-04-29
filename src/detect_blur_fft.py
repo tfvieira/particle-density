@@ -81,12 +81,12 @@ def detect_blur_fft(image, size=0, thresh=10, plot_results=False, verbose=False)
     # compute the magnitude spectrum of the reconstructed image,
     # then compute the mean of the magnitude values
     magnitude = 20 * np.log(np.abs(1 + recon))
-    mean = np.mean(magnitude)
+    mean = np.median(magnitude)
     
 
     # Print the mean if verbose is TRUE
     if verbose is True:
-        print(f"FFT mean = {mean}")
+        print(f"Blur score = {mean}")
 
     # the image will be considered "blurry" if the mean value of the
     # magnitudes is less than the threshold value

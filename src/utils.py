@@ -164,13 +164,13 @@ def process_ground_truths(name_list, gt_list, out_list, mom_list, config):
         gt = ground_thruths[i]
     
         bgr = np.stack((img,)*3, axis=-1)
-        contours, hierarchy = cv2.findContours(gt, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours = cv2.findContours(gt, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         M = cv2.moments(contours[0])
         
         areas.append(int(M['m00']))
         moments.append(M)
     
-        cv2.drawContours(bgr, contours, -1, (0,255,0), 3)
+        cv2.drawContours(bgr, contours[1], -1, (0,255,0), 3)
     
         # cv2.namedWindow("bgr", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
         # cv2.imshow("bgr", bgr)
