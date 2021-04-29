@@ -1,0 +1,21 @@
+{
+    "CIRCLES_GT": null,
+    "CROP_RECTANGLE": [
+        1000,
+        600,
+        1200,
+        600
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "..\\dataset\\10-microns particles-60X\\10-microns particles-60X.tif",
+    "INPUT_PATH": "..\\dataset\\10-microns particles-60X",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": 1.1363636363636364e-07,
+    "N_IMAGES": 20,
+    "OUTPUT_PATH": "..\\results\\10-microns particles-60X",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": 6.456611570247935e-10,
+    "TITLE":"10-microns particles-60X"
+}
