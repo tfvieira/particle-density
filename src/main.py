@@ -18,6 +18,10 @@ from utils  import *#read_list_of_images
 from snakes import *
 from detect_blur_fft import detect_blur_fft
 
+plt.style.use('seaborn')
+plt.rcParams["figure.dpi"] = 300
+plt.rcParams['savefig.dpi'] = 300
+
 # %%===========================================================================
 # Define IO parameters -- 10-microns particles-60X
 
@@ -74,7 +78,11 @@ rectangle = config['CROP_RECTANGLE']
 sizes = (rectangle[2]/2 * np.linspace(0, 1.5, 21)).astype('int')
 # size = int(percentages[0])
 
+def plotyy(x, y1, y2, parameters=dict()):
+    return 0
+
 distances = []
+correlations = []
 for size in sizes:
     blurs = []
     mags  = []
@@ -92,41 +100,94 @@ for size in sizes:
     ind = range(config["N_IMAGES"])
     fig, ax = plt.subplots(figsize=(16,8))
     
-    series_norm = series / (np.linalg.norm(series) + 1e-16)
-    areas_norm = areas / (np.linalg.norm(areas) + 1e-16)
+    a = areas.copy()
+    s = series.tolist()
+    series_norm = (s - np.min(s)) / (np.max(s) - np.min(s))
+    areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
     distance = np.linalg.norm(series_norm - areas_norm, ord=2)
     distances.append(distance)
+    
+    r, p = compute_correlation(s, a)
+    correlations.append((r, p))
+
+    # color = 'tab:red'
+    # ax.plot(ind, blurs, color=color, marker='s', linestyle='dotted')
+    # ax.set_xticks(ind)
+    # ax.set_xticklabels(ind)
+    # ax.set_xlabel("Image index")
+    # ax.set_ylabel("Blur score", color=color)
+    # ax.tick_params(axis='y', labelcolor=color)
+    
+    # ax2 = ax.twinx()
+    # color = 'tab:blue'
+    # ax2.plot(ind, areas, color=color, marker='o', linestyle='solid')
+    # ax2.set_xticks(ind)
+    # ax2.set_xticklabels(ind, color=color)
+    # ax2.set_xlabel("Image index")
+    # ax2.set_ylabel("Ground Truth Area (Pixels)", color=color)
+    # ax2.tick_params(axis='y', labelcolor=color)
+    
+    # plt.title(config["TITLE"])
+    
+    
 
     
+    ind = range(config["N_IMAGES"])
+    fig, ax = plt.subplots()
+    
     color = 'tab:red'
-    ax.plot(ind, blurs, color=color, marker='s', linestyle='dotted')
+    ax.plot(ind, series_norm, color=color, marker='s', linestyle='dotted', label="Blur score")
     ax.set_xticks(ind)
     ax.set_xticklabels(ind)
     ax.set_xlabel("Image index")
-    ax.set_ylabel("Blur score", color=color)
-    ax.tick_params(axis='y', labelcolor=color)
     
-    ax2 = ax.twinx()
     color = 'tab:blue'
-    ax2.plot(ind, areas, color=color, marker='o', linestyle='solid')
-    ax2.set_xticks(ind)
-    ax2.set_xticklabels(ind, color=color)
-    ax2.set_xlabel("Image index")
-    ax2.set_ylabel("Ground Truth Area (Pixels)", color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
+    ax.plot(ind, areas_norm, color=color, marker='o', linestyle='solid', label="Ground Truth Area (Pixels)")
+    ax.set_xticks(ind)
+    ax.set_xlabel("Image index")
     
     plt.title(config["TITLE"])
     plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_size_{size:04}.png"), dpi=200)
-    # plt.show()
+    plt.legend()
+    plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_size_{size:04}.png"), dpi=200)
 
 distances = pd.Series(distances)
 distances.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.csv"), header=None, index=None)
 plt.figure()
 plt.plot(sizes, distances, 'ro')
 plt.title(config["TITLE"])
-plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.png"), dpi=200)
+plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.png"))
+
+corrs = pd.DataFrame(correlations)
+corrs.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_correlations.csv"), header=None, index=None)
 
 
+
+#%%
+
+# series_norm = (s - np.min(s)) / (np.max(s) - np.min(s))
+# areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
+# distance = np.linalg.norm(series_norm - areas_norm, ord=2)
+
+# ind = range(config["N_IMAGES"])
+# fig, ax = plt.subplots()
+
+# color = 'tab:red'
+# ax.plot(ind, series_norm, color=color, marker='s', linestyle='dotted', label="Blur score")
+# ax.set_xticks(ind)
+# ax.set_xticklabels(ind)
+# ax.set_xlabel("Image index")
+
+# color = 'tab:blue'
+# ax.plot(ind, areas_norm, color=color, marker='o', linestyle='solid', label="Ground Truth Area (Pixels)")
+# ax.set_xticks(ind)
+# # ax.set_xticklabels(ind, color=color)
+# ax.set_xlabel("Image index")
+
+# plt.title(config["TITLE"])
+# plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_size_{size:04}.png"), dpi=200)
+# plt.legend()
+# plt.show()
 
 
 

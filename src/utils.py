@@ -10,6 +10,7 @@ import os
 import cv2
 import json
 import numpy as np
+import scipy.stats
 import matplotlib.pyplot as plt
 from skimage import data, img_as_float
 from detect_blur_fft import detect_blur_fft
@@ -183,3 +184,9 @@ def process_ground_truths(name_list, gt_list, out_list, mom_list, config):
             json.dump(M, fp, sort_keys=True, indent=4)
     
     return (areas, moments)
+
+def compute_correlation(x, y):
+    """
+    Compute Pearson's correlation between two lists.
+    """
+    return scipy.stats.pearsonr(x, y)
