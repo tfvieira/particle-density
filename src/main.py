@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils  import *#read_list_of_images
+from utils  import * #read_list_of_images
 from snakes import *
 from detect_blur_fft import detect_blur_fft
 
@@ -27,7 +27,8 @@ plt.rcParams['savefig.dpi'] = 300
 
 # CONFIG_FILENAME = "config_1.json"
 # CONFIG_FILENAME = "config_2.json"
-CONFIG_FILENAME = "config_3.json"
+# CONFIG_FILENAME = "config_3.json"
+CONFIG_FILENAME = "config_4.json"
 
 # CIRCLES_GT_FILENAME = "config_2.npy"
 
@@ -56,17 +57,17 @@ write_list_of_images(preprocessed_filenames, preprocessed_images)
 
 # %%===========================================================================
 # Show list of pre-processed images
-# preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# preprocessed_images = read_list_of_images(preprocessed_filenames)
-# show_list_of_images(preprocessed_images)
+preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+preprocessed_images = read_list_of_images(preprocessed_filenames)
+show_list_of_images(preprocessed_images)
 
 # %%===========================================================================
 # Process Ground truths
-name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-gt_list   = [os.path.join(config["OUTPUT_PATH"], "gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-out_list  = [os.path.join(config["OUTPUT_PATH"], "split_gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-mom_list  = [os.path.join(config["OUTPUT_PATH"], "moments_" + str(x) + ".json") for x in range(config["N_IMAGES"])]
-areas, moments = process_ground_truths(name_list, gt_list, out_list, mom_list, config)
+# name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# gt_list   = [os.path.join(config["OUTPUT_PATH"], "gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# out_list  = [os.path.join(config["OUTPUT_PATH"], "split_gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# mom_list  = [os.path.join(config["OUTPUT_PATH"], "moments_" + str(x) + ".json") for x in range(config["N_IMAGES"])]
+# areas, moments = process_ground_truths(name_list, gt_list, out_list, mom_list, config)
 
 # %%===========================================================================
 # Compute Blur measure
@@ -100,15 +101,15 @@ for size in sizes:
     ind = range(config["N_IMAGES"])
     fig, ax = plt.subplots(figsize=(16,8))
     
-    a = areas.copy()
+    # a = areas.copy()
     s = series.tolist()
     series_norm = (s - np.min(s)) / (np.max(s) - np.min(s))
-    areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
-    distance = np.linalg.norm(series_norm - areas_norm, ord=2)
-    distances.append(distance)
+    # areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
+    # distance = np.linalg.norm(series_norm - areas_norm, ord=2)
+    # distances.append(distance)
     
-    r, p = compute_correlation(s, a)
-    correlations.append((r, p))
+    # r, p = compute_correlation(s, a)
+    # correlations.append((r, p))
 
     # color = 'tab:red'
     # ax.plot(ind, blurs, color=color, marker='s', linestyle='dotted')
@@ -141,25 +142,24 @@ for size in sizes:
     ax.set_xticklabels(ind)
     ax.set_xlabel("Image index")
     
-    color = 'tab:blue'
-    ax.plot(ind, areas_norm, color=color, marker='o', linestyle='solid', label="Ground Truth Area (Pixels)")
-    ax.set_xticks(ind)
-    ax.set_xlabel("Image index")
+    # color = 'tab:blue'
+    # ax.plot(ind, areas_norm, color=color, marker='o', linestyle='solid', label="Ground Truth Area (Pixels)")
+    # ax.set_xticks(ind)
+    # ax.set_xlabel("Image index")
     
     plt.title(config["TITLE"])
-    plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_size_{size:04}.png"), dpi=200)
     plt.legend()
     plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_size_{size:04}.png"), dpi=200)
 
-distances = pd.Series(distances)
-distances.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.csv"), header=None, index=None)
-plt.figure()
-plt.plot(sizes, distances, 'ro')
-plt.title(config["TITLE"])
-plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.png"))
+# distances = pd.Series(distances)
+# distances.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.csv"), header=None, index=None)
+# plt.figure()
+# plt.plot(sizes, distances, 'ro')
+# plt.title(config["TITLE"])
+# plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.png"))
 
-corrs = pd.DataFrame(correlations)
-corrs.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_correlations.csv"), header=None, index=None)
+# corrs = pd.DataFrame(correlations)
+# corrs.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_correlations.csv"), header=None, index=None)
 
 
 

@@ -1,0 +1,20 @@
+{
+    "CROP_RECTANGLE": [
+        360,
+        400,
+        1400,
+        1400
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "..\\dataset\\Several 10-micron-particles together\\Several 10-micron-particles together.tif",
+    "INPUT_PATH": "..\\dataset\\Several 10-micron-particles together",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": null,
+    "N_IMAGES": 21,
+    "OUTPUT_PATH": "..\\results\\Several 10-micron-particles together",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": null,
+    "TITLE":"Several 10-micron-particles together"
+}
