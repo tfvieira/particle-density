@@ -1,0 +1,20 @@
+{
+    "CROP_RECTANGLE": [
+        612,
+        480,
+        1224,
+        960
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "..\\dataset\\Four-mixing particles together\\Four-mixing particles together.tif",
+    "INPUT_PATH": "..\\dataset\\Four-mixing particles together",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": null,
+    "N_IMAGES": 27,
+    "OUTPUT_PATH": "..\\results\\Four-mixing particles together",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": null,
+    "TITLE":"Four-mixing particles together"
+}

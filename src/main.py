@@ -28,7 +28,8 @@ plt.rcParams['savefig.dpi'] = 300
 # CONFIG_FILENAME = "config_1.json"
 # CONFIG_FILENAME = "config_2.json"
 # CONFIG_FILENAME = "config_3.json"
-CONFIG_FILENAME = "config_4.json"
+# CONFIG_FILENAME = "config_4.json"
+CONFIG_FILENAME = "config_5.json"
 
 # CIRCLES_GT_FILENAME = "config_2.npy"
 
@@ -129,10 +130,10 @@ for size in sizes:
     # ax2.tick_params(axis='y', labelcolor=color)
     
     # plt.title(config["TITLE"])
-    
-    
 
-    
+
+
+
     ind = range(config["N_IMAGES"])
     fig, ax = plt.subplots()
     
