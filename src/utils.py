@@ -190,3 +190,44 @@ def compute_correlation(x, y):
     Compute Pearson's correlation between two lists.
     """
     return scipy.stats.pearsonr(x, y)
+
+
+def compute_particle_density(bead_radius = 10e-6/2, time_decay=9.06):
+    """
+    Compute particle density.
+
+    Inputs:     bead_radius is the particle radius in meters.
+                time_decay is the time elapsed during the particle fall.
+    
+    Outputs:    particle_density.
+
+    Defaults:   bead_radius = 10e-6/2
+                time_decay  = 9.06
+
+    Comments:   The code is based on:
+                Measurement of single leukemia cell's density and mass using optically induced electric field in a microfluidics chip
+                Biomicrofluidics 9, 022406 (2015); https://doi.org/10.1063/1.4917290
+                Yuliang Zhao1, Hok Sum Sam Lai, Guanglie Zhang, Gwo-Bin Lee, Wen Jung Li
+    """
+
+    # r = (10.06e-6)/2     # Beads readius (metros) for 10um particle
+    # r = ((26.12)*1e-6)/2 # Beads readius (metros) for 30um particle
+
+    # time_decay = 9.06    # 10um time decay measured
+    # time_decay = 3.4629  # 30um time decay measured 
+
+    r = bead_radius
+
+    n = 1.002e-3         # viscosity (Pa*s)= (kg*/s)
+
+    g = 9.82             # Gravity (m/s2)
+    a = 4.63             # constante factor (dimensionless)
+
+    sigma = time_decay/a # Time constante (segundos)
+
+    rom = 1.0030e+03     # Medium density (kg/m3)
+    term = (9*n)/(2*r*g*sigma)
+    roc = rom + term
+    
+    return roc
+

@@ -22,18 +22,17 @@ plt.style.use('seaborn')
 plt.rcParams["figure.dpi"] = 300
 plt.rcParams['savefig.dpi'] = 300
 
+# Define IO parameters
+CONFIG_PATH = "config"
+# EXPERIMENT = "10-microns particles-60X"
+# EXPERIMENT = "30 microns-beads-60X-measuring 2"
+# EXPERIMENT = "Calibration 10-microns"
+# EXPERIMENT = "Several 10-micron-particles together"
+EXPERIMENT = "Four-mixing particles together"
+
 # %%===========================================================================
-# Define IO parameters -- 10-microns particles-60X
-
-# CONFIG_FILENAME = "config_1.json"
-# CONFIG_FILENAME = "config_2.json"
-# CONFIG_FILENAME = "config_3.json"
-# CONFIG_FILENAME = "config_4.json"
-CONFIG_FILENAME = "config_5.json"
-
-# CIRCLES_GT_FILENAME = "config_2.npy"
-
-# CIRCLES_GT = np.load(CIRCLES_GT_FILENAME)
+# Read configuration parameters from JSON file
+CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + ".json")
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
 
@@ -161,7 +160,6 @@ for size in sizes:
 
 # corrs = pd.DataFrame(correlations)
 # corrs.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_correlations.csv"), header=None, index=None)
-
 
 
 #%%
