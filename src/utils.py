@@ -9,11 +9,13 @@ Created on Wed Apr 21 21:01:52 2021
 import os
 import cv2
 import json
+import pandas as pd
 import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt
 from skimage import data, img_as_float
 from detect_blur_fft import detect_blur_fft
+from sklearn import preprocessing
 
 #%%
 
@@ -43,13 +45,11 @@ def crop_images(input_filename, output_path, rectangle, output_name="crop", verb
     
     return None
 
-
 def normalize_image(image):
     """
     Normalize image to [0,1] range.
     """
     return cv2.normalize(image.astype('float64'), None, 1, 0, cv2.NORM_MINMAX)
-
 
 def do_nothing():
     pass
@@ -67,7 +67,6 @@ def read_list_of_images(filenames):
         images.append(image)
     
     return images
-
 
 def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, circles=None):
     
@@ -192,7 +191,7 @@ def compute_correlation(x, y):
     return scipy.stats.pearsonr(x, y)
 
 
-def compute_particle_density(bead_radius = 10e-6/2, time_decay=9.06):
+def compute_particle_density(bead_radius = 10e-6/2, time_decay = 9.06):
     """
     Compute particle density.
 
@@ -204,7 +203,7 @@ def compute_particle_density(bead_radius = 10e-6/2, time_decay=9.06):
     Defaults:   bead_radius = 10e-6/2
                 time_decay  = 9.06
 
-    Comments:   The code is based on:
+    Comments:   This code is based on:
                 Measurement of single leukemia cell's density and mass using optically induced electric field in a microfluidics chip
                 Biomicrofluidics 9, 022406 (2015); https://doi.org/10.1063/1.4917290
                 Yuliang Zhao1, Hok Sum Sam Lai, Guanglie Zhang, Gwo-Bin Lee, Wen Jung Li
@@ -230,4 +229,45 @@ def compute_particle_density(bead_radius = 10e-6/2, time_decay=9.06):
     roc = rom + term
     
     return roc
+
+def read_csv_files (csv_filenames):
+    """
+    Compose dataset from a list of '.csv' files.
+
+    Parameters
+    ----------
+    csv_filenames : list containing csv filenames
+
+    Returns
+    -------
+    pandas.DataFrame
+        A pandas dataframe containing the concatenated .csv files data.
+
+    """
+
+    return pd.concat((pd.read_csv(f, header=None) for f in csv_filenames), axis=1)
+
+def normalize_df_min_max(df):
+    """
+    Normalize dataframe using column-wise min-max criteria.
+
+    Parameters
+    ----------
+    df : Input pandas dataframe.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A pandas dataframe with columns normalized to range [0.0, 1.0]
+    
+    """
+
+    x = df.values #returns a numpy array
+    columns = df.columns
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    df_norm = pd.DataFrame(x_scaled)
+    df_norm.columns = columns
+
+    return df_norm
 

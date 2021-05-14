@@ -24,146 +24,165 @@ plt.rcParams['savefig.dpi'] = 300
 
 # Define IO parameters
 CONFIG_PATH = "config"
+
 # EXPERIMENT = "10-microns particles-60X"
 # EXPERIMENT = "30 microns-beads-60X-measuring 2"
 # EXPERIMENT = "Calibration 10-microns"
 # EXPERIMENT = "Several 10-micron-particles together"
-EXPERIMENT = "Four-mixing particles together"
+# EXPERIMENT = "Four-mixing particles together"
 
-# %%===========================================================================
 # Read configuration parameters from JSON file
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + ".json")
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
 
-# %%===========================================================================
-# Split one TIF image into many images, each corresponding to one TIF layer
-split_images(config["INPUT_FILENAME"], 
-              config["OUTPUT_PATH"])
+# # %%===========================================================================
+# # Split one TIF image into many images, each corresponding to one TIF layer
+# split_images(config["INPUT_FILENAME"], 
+#               config["OUTPUT_PATH"])
 
-# %%===========================================================================
-# Crop the images to contain only the particles
-crop_images(config["INPUT_FILENAME"], 
-            config["OUTPUT_PATH"], 
-            rectangle=config["CROP_RECTANGLE"])
+# # %%===========================================================================
+# # Crop the images to contain only the particles
+# crop_images(config["INPUT_FILENAME"], 
+#             config["OUTPUT_PATH"], 
+#             rectangle=config["CROP_RECTANGLE"])
 
-# %%===========================================================================
-# Pre-process all images
-name_list = [os.path.join(config["OUTPUT_PATH"], "crop_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-images = read_list_of_images(name_list)
-preprocessed_images = preprocess_list_of_images(images)
-preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-write_list_of_images(preprocessed_filenames, preprocessed_images)
+# # %%===========================================================================
+# # Pre-process all images
+# name_list = [os.path.join(config["OUTPUT_PATH"], "crop_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# images = read_list_of_images(name_list)
+# preprocessed_images = preprocess_list_of_images(images)
+# preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# write_list_of_images(preprocessed_filenames, preprocessed_images)
 
-# %%===========================================================================
-# Show list of pre-processed images
-preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-preprocessed_images = read_list_of_images(preprocessed_filenames)
-show_list_of_images(preprocessed_images)
+# # %%===========================================================================
+# # Show list of pre-processed images
+# preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# preprocessed_images = read_list_of_images(preprocessed_filenames)
+# show_list_of_images(preprocessed_images)
 
-# %%===========================================================================
-# Process Ground truths
-# name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# gt_list   = [os.path.join(config["OUTPUT_PATH"], "gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# out_list  = [os.path.join(config["OUTPUT_PATH"], "split_gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# mom_list  = [os.path.join(config["OUTPUT_PATH"], "moments_" + str(x) + ".json") for x in range(config["N_IMAGES"])]
-# areas, moments = process_ground_truths(name_list, gt_list, out_list, mom_list, config)
+# # %%===========================================================================
+# # Process Ground truths
+# # name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# # gt_list   = [os.path.join(config["OUTPUT_PATH"], "gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# # out_list  = [os.path.join(config["OUTPUT_PATH"], "split_gt_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# # mom_list  = [os.path.join(config["OUTPUT_PATH"], "moments_" + str(x) + ".json") for x in range(config["N_IMAGES"])]
+# # areas, moments = process_ground_truths(name_list, gt_list, out_list, mom_list, config)
 
-# %%===========================================================================
-# Compute Blur measure
-name_list = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-images = read_list_of_images(name_list)
+# # %%===========================================================================
+# # Compute Blur measure
+# name_list = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# # name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# images = read_list_of_images(name_list)
 
+# rectangle = config['CROP_RECTANGLE']
+# sizes = (rectangle[2]/2 * np.linspace(0, 1.5, 21)).astype('int')
+# # size = int(percentages[0])
+
+# def plotyy(x, y1, y2, parameters=dict()):
+#     return 0
+
+# distances = []
+# correlations = []
+# for size in sizes:
+#     blurs = []
+#     mags  = []
+#     rectangle = config['CROP_RECTANGLE']
+#     for i, image in enumerate(images):
+            
+#         blur, _, mag = detect_blur_fft(image, size=size, verbose=True)
+#         mags.append(mag)
+#         blurs.append(blur)
+    
+#     series = pd.Series(blurs)
+    
+#     series.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscore_size_{size:04}.csv"), header=None, index=None)
+    
+#     ind = range(config["N_IMAGES"])
+#     fig, ax = plt.subplots(figsize=(16,8))
+    
+#     # a = areas.copy()
+#     s = series.tolist()
+#     series_norm = (s - np.min(s)) / (np.max(s) - np.min(s))
+#     # areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
+#     # distance = np.linalg.norm(series_norm - areas_norm, ord=2)
+#     # distances.append(distance)
+    
+#     # r, p = compute_correlation(s, a)
+#     # correlations.append((r, p))
+
+#     # color = 'tab:red'
+#     # ax.plot(ind, blurs, color=color, marker='s', linestyle='dotted')
+#     # ax.set_xticks(ind)
+#     # ax.set_xticklabels(ind)
+#     # ax.set_xlabel("Image index")
+#     # ax.set_ylabel("Blur score", color=color)
+#     # ax.tick_params(axis='y', labelcolor=color)
+    
+#     # ax2 = ax.twinx()
+#     # color = 'tab:blue'
+#     # ax2.plot(ind, areas, color=color, marker='o', linestyle='solid')
+#     # ax2.set_xticks(ind)
+#     # ax2.set_xticklabels(ind, color=color)
+#     # ax2.set_xlabel("Image index")
+#     # ax2.set_ylabel("Ground Truth Area (Pixels)", color=color)
+#     # ax2.tick_params(axis='y', labelcolor=color)
+    
+#     # plt.title(config["TITLE"])
+
+
+
+
+#     ind = range(config["N_IMAGES"])
+#     fig, ax = plt.subplots()
+    
+#     color = 'tab:red'
+#     ax.plot(ind, series_norm, color=color, marker='s', linestyle='dotted', label="Blur score")
+#     ax.set_xticks(ind)
+#     ax.set_xticklabels(ind)
+#     ax.set_xlabel("Image index")
+    
+#     # color = 'tab:blue'
+#     # ax.plot(ind, areas_norm, color=color, marker='o', linestyle='solid', label="Ground Truth Area (Pixels)")
+#     # ax.set_xticks(ind)
+#     # ax.set_xlabel("Image index")
+    
+#     plt.title(config["TITLE"])
+#     plt.legend()
+#     plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_size_{size:04}.png"), dpi=200)
+
+# # distances = pd.Series(distances)
+# # distances.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.csv"), header=None, index=None)
+# # plt.figure()
+# # plt.plot(sizes, distances, 'ro')
+# # plt.title(config["TITLE"])
+# # plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.png"))
+
+# # corrs = pd.DataFrame(correlations)
+# # corrs.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_correlations.csv"), header=None, index=None)
+
+# #%% Concatenate all blur scores
 rectangle = config['CROP_RECTANGLE']
 sizes = (rectangle[2]/2 * np.linspace(0, 1.5, 21)).astype('int')
-# size = int(percentages[0])
+# best_sizes = [179, 210, 240, 270, 300]
+csv_filenames = [os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscore_size_{size:04}.csv") for size in sizes]
+df = read_csv_files(csv_filenames)
+df.columns = sizes
 
-def plotyy(x, y1, y2, parameters=dict()):
-    return 0
+df_norm = normalize_df_min_max(df)
 
-distances = []
-correlations = []
-for size in sizes:
-    blurs = []
-    mags  = []
-    rectangle = config['CROP_RECTANGLE']
-    for i, image in enumerate(images):
-            
-        blur, _, mag = detect_blur_fft(image, size=size, verbose=True)
-        mags.append(mag)
-        blurs.append(blur)
-    
-    series = pd.Series(blurs)
-    
-    series.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscore_size_{size:04}.csv"), header=None, index=None)
-    
-    ind = range(config["N_IMAGES"])
-    fig, ax = plt.subplots(figsize=(16,8))
-    
-    # a = areas.copy()
-    s = series.tolist()
-    series_norm = (s - np.min(s)) / (np.max(s) - np.min(s))
-    # areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
-    # distance = np.linalg.norm(series_norm - areas_norm, ord=2)
-    # distances.append(distance)
-    
-    # r, p = compute_correlation(s, a)
-    # correlations.append((r, p))
+df.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores.csv"))
+df_norm.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores_normalized.csv"))
 
-    # color = 'tab:red'
-    # ax.plot(ind, blurs, color=color, marker='s', linestyle='dotted')
-    # ax.set_xticks(ind)
-    # ax.set_xticklabels(ind)
-    # ax.set_xlabel("Image index")
-    # ax.set_ylabel("Blur score", color=color)
-    # ax.tick_params(axis='y', labelcolor=color)
-    
-    # ax2 = ax.twinx()
-    # color = 'tab:blue'
-    # ax2.plot(ind, areas, color=color, marker='o', linestyle='solid')
-    # ax2.set_xticks(ind)
-    # ax2.set_xticklabels(ind, color=color)
-    # ax2.set_xlabel("Image index")
-    # ax2.set_ylabel("Ground Truth Area (Pixels)", color=color)
-    # ax2.tick_params(axis='y', labelcolor=color)
-    
-    # plt.title(config["TITLE"])
-
-
-
-
-    ind = range(config["N_IMAGES"])
-    fig, ax = plt.subplots()
-    
-    color = 'tab:red'
-    ax.plot(ind, series_norm, color=color, marker='s', linestyle='dotted', label="Blur score")
-    ax.set_xticks(ind)
-    ax.set_xticklabels(ind)
-    ax.set_xlabel("Image index")
-    
-    # color = 'tab:blue'
-    # ax.plot(ind, areas_norm, color=color, marker='o', linestyle='solid', label="Ground Truth Area (Pixels)")
-    # ax.set_xticks(ind)
-    # ax.set_xlabel("Image index")
-    
-    plt.title(config["TITLE"])
-    plt.legend()
-    plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_size_{size:04}.png"), dpi=200)
-
-# distances = pd.Series(distances)
-# distances.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.csv"), header=None, index=None)
-# plt.figure()
-# plt.plot(sizes, distances, 'ro')
-# plt.title(config["TITLE"])
-# plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_distances.png"))
-
-# corrs = pd.DataFrame(correlations)
-# corrs.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_correlations.csv"), header=None, index=None)
-
+df_norm.plot()
+df_norm.transpose().plot.box()
+plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores.png"))
 
 #%%
 
+
+
+#%%
 # series_norm = (s - np.min(s)) / (np.max(s) - np.min(s))
 # areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
 # distance = np.linalg.norm(series_norm - areas_norm, ord=2)
