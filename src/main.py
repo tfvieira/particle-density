@@ -25,11 +25,13 @@ plt.rcParams['savefig.dpi'] = 300
 # Define IO parameters
 CONFIG_PATH = "config"
 
-# EXPERIMENT = "10-microns particles-60X"
-# EXPERIMENT = "30 microns-beads-60X-measuring 2"
-# EXPERIMENT = "Calibration 10-microns"
-# EXPERIMENT = "Several 10-micron-particles together"
-# EXPERIMENT = "Four-mixing particles together"
+EXPERIMENTS = [
+    "30 microns-beads-60X-measuring 2",
+    "10-microns particles-60X",
+    # "Several 10-micron-particles together",
+    # "Four-mixing particles together"
+]
+EXPERIMENT = EXPERIMENTS[0]
 
 # Read configuration parameters from JSON file
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + ".json")
@@ -161,24 +163,117 @@ with open(CONFIG_FILENAME, 'r') as fp:
 # # corrs = pd.DataFrame(correlations)
 # # corrs.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_correlations.csv"), header=None, index=None)
 
-# #%% Concatenate all blur scores
-rectangle = config['CROP_RECTANGLE']
-sizes = (rectangle[2]/2 * np.linspace(0, 1.5, 21)).astype('int')
-# best_sizes = [179, 210, 240, 270, 300]
-csv_filenames = [os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscore_size_{size:04}.csv") for size in sizes]
-df = read_csv_files(csv_filenames)
-df.columns = sizes
+#%% Concatenate all blur scores
+# rectangle = config['CROP_RECTANGLE']
+# sizes = (rectangle[2]/2 * np.linspace(0, 1.5, 21)).astype('int')
+# # sizes = [config["BEST_BLURSCORE"]]
+# csv_filenames = [os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscore_size_{size:04}.csv") for size in sizes]
+# df = read_csv_files(csv_filenames)
+# df.columns = sizes
+# df_norm = normalize_df_min_max(df)
 
-df_norm = normalize_df_min_max(df)
+# df.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores.csv"))
+# df_norm.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores_normalized.csv"))
 
-df.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores.csv"))
-df_norm.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores_normalized.csv"))
-
-df_norm.plot()
-df_norm.transpose().plot.box()
-plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores.png"))
+# df_norm.plot()
+# df_norm.transpose().plot.box()
+# plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores.png"))
 
 #%%
+from scipy.optimize import curve_fit
+
+def exponential(x, a, b, c):
+    return a * np.exp( b * x ) + c
+
+blurscores = {}
+
+for EXPERIMENT in EXPERIMENTS:
+
+    # Read configuration parameters from JSON file
+    CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + ".json")
+    with open(CONFIG_FILENAME, 'r') as fp:
+        config = json.load(fp)
+
+    blurscores[EXPERIMENT]  = pd.read_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscore_size_{config['BEST_BLURSCORE']:04}.csv"), header=None).values
+
+
+linestyles = ['-', '--', '-.', ':']
+markers    = ['s', 'o', 'D', '*']
+colors     = ['b', 'g', 'r', 'm']
+heights = np.linspace(125, 91, 18) # Calibration Heights
+
+i = 0
+fig = plt.figure(figsize=(6,8))
+ax = fig.add_subplot()
+
+parameters  = []
+covariances = []
+
+x = np.linspace(-0,1,100)
+
+for key, arr in blurscores.items():
+
+    print(f"{len(arr)}, {key}")
+
+    d = arr[:18]
+    d = (d - d[0]) / (d.max() - d.min())
+
+    pars, cov = curve_fit(f=exponential, xdata=d.flatten(), ydata=heights, p0=[0, 0, 0], bounds=(-np.inf, np.inf))
+
+    parameters.append(pars)
+    covariances.append(cov)
+
+    y = exponential(x, pars[0], pars[1], pars[2])
+
+    ax.plot(
+        d, heights, 
+        linestyle = '',
+        # linestyle  = linestyles[i],
+        marker     = markers[i],
+        color      = colors[i],
+        label      = key)
+
+    ax.plot(
+        x, y, linestyle = linestyles[i], color=colors[i],
+        label = f"{pars[0]:.2}exp({pars[1]:.2}x) + {pars[2]:.2}"
+    )
+
+    i += 1
+
+plt.legend(loc='upper right')
+plt.ylabel("Height ($\mu m$)")
+plt.xlabel("Normalized Blur Score")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

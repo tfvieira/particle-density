@@ -16,5 +16,6 @@
     "SNAKES_N_ITER": 500,
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
-    "TITLE":"Several 10-micron-particles together"
+    "TITLE":"Several 10-micron-particles together",
+    "BEST_BLURSCORE": 210
 }

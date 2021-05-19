@@ -16,5 +16,6 @@
     "SNAKES_N_ITER": 500,
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
-    "TITLE":"Calibration 10-microns"
+    "TITLE":"Calibration 10-microns",
+    "BEST_BLURSCORE": 183
 }

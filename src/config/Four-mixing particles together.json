@@ -16,5 +16,6 @@
     "SNAKES_N_ITER": 500,
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
-    "TITLE":"Four-mixing particles together"
+    "TITLE":"Four-mixing particles together",
+    "BEST_BLURSCORE": 229
 }

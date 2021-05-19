@@ -17,5 +17,9 @@
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
     "TITLE":"30 microns-beads-60X-measuring 2",
-    "FRAME_NUMBER_VS_TIME": {"FRAME_NUMBER": [14, 15, 16, 17, 18, 19, 20, 21, 22], "TIME": [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]}
+    "BEST_BLURSCORE": 210,
+    "FRAME_NUMBER_VS_TIME": {
+        "FRAME_NUMBER": [14, 15, 16, 17, 18, 19, 20, 21, 22], 
+        "TIME": [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+    }
 }
