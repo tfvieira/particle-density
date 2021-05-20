@@ -28,8 +28,8 @@ CONFIG_PATH = "config"
 EXPERIMENTS = [
     "30 microns-beads-60X-measuring 2",
     "10-microns particles-60X",
-    # "Several 10-micron-particles together",
-    # "Four-mixing particles together"
+    "Several 10-micron-particles together",
+    "Four-mixing particles together"
 ]
 EXPERIMENT = EXPERIMENTS[0]
 
@@ -185,6 +185,9 @@ from scipy.optimize import curve_fit
 def exponential(x, a, b, c):
     return a * np.exp( b * x ) + c
 
+def double_exponential(x, a1, t1, a2, t2, y0):
+    return a1 * np.exp( - x/t1 ) + a2 * np.exp( - x/t2 ) + y0
+
 blurscores = {}
 
 for EXPERIMENT in EXPERIMENTS:
@@ -196,7 +199,34 @@ for EXPERIMENT in EXPERIMENTS:
 
     blurscores[EXPERIMENT]  = pd.read_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscore_size_{config['BEST_BLURSCORE']:04}.csv"), header=None).values
 
+#%%
+for key, arr in blurscores.items():
 
+    blurscores[key] = arr[:18].flatten()
+
+#%%
+d = pd.DataFrame.from_dict(blurscores)
+m = d.transpose().mean().to_numpy()
+m = (m - m.min())/ (m.max() - m.min())
+
+heights = np.linspace(125, 91, 18) # Calibration Heights
+pars, cov = curve_fit(f=double_exponential, xdata=m.flatten(), ydata=heights, p0=np.random.random((1,5)), bounds=(-np.inf, np.inf))
+
+x = np.linspace(0,1,100)
+y = double_exponential(x, pars[0], pars[1], pars[2], pars[3], pars[4])
+
+#%%
+fig = plt.figure(figsize=(6,8))
+ax = fig.add_subplot()
+ax.plot(m, heights, 'k.')
+ax.plot(x, y, '-r', label = f"{pars[0]:.2}exp(-x/{pars[1]:.2}) + {pars[2]:.2}exp(-x/{pars[3]:.2}) + {pars[4]:.2}")
+plt.legend()
+plt.ylabel("Height ($\mu m$)")
+plt.xlabel("Normalized Blur Score")
+plt.show()
+
+
+#%%
 linestyles = ['-', '--', '-.', ':']
 markers    = ['s', 'o', 'D', '*']
 colors     = ['b', 'g', 'r', 'm']
@@ -210,6 +240,8 @@ parameters  = []
 covariances = []
 
 x = np.linspace(-0,1,100)
+
+
 
 for key, arr in blurscores.items():
 
