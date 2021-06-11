@@ -134,6 +134,10 @@ def write_list_of_images(list_of_filenames, list_of_images):
         print(f"Saving image file {filename}")
         cv2.imwrite(filename, image)
 
+def print_array_minmax(arr, name=""):
+    print(name + f" (min,max) = ({arr.min():.2f}, {arr.max():.2f})")
+    return None
+
 def preprocess_list_of_images(images, med_blur_size = 27, ksize = 31):
     
     output_images= []
@@ -142,6 +146,7 @@ def preprocess_list_of_images(images, med_blur_size = 27, ksize = 31):
         g = cv2.magnitude(cv2.Sobel(output_image, cv2.CV_64F, 1, 0, ksize=ksize), 
                           cv2.Sobel(output_image, cv2.CV_64F, 0, 1, ksize=ksize))
         g = (255*normalize_image(g)).astype(np.uint8)
+
         output_images.append(g)
     
     return output_images

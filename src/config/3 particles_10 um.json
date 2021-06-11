@@ -1,0 +1,21 @@
+{
+    "CROP_RECTANGLE": [
+        230,
+        150,
+        290,
+        290
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "..\\dataset\\3 particles_10 um\\3 particles_10 um.tif",
+    "INPUT_PATH": "..\\dataset\\3 particles_10 um",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": null,
+    "N_IMAGES": 23,
+    "OUTPUT_PATH": "..\\results\\3 particles_10 um",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": null,
+    "TITLE":"3 particles_10 um",
+    "BEST_BLURSCORE": null
+}
