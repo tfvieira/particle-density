@@ -51,7 +51,7 @@ def normalize_image(image):
     """
     return cv2.normalize(image.astype('float64'), None, 1, 0, cv2.NORM_MINMAX)
 
-def do_nothing():
+def do_nothing(x):
     pass
 
 def read_list_of_images(filenames):
@@ -68,12 +68,61 @@ def read_list_of_images(filenames):
     
     return images
 
+def find_external_contours(binary_image):
+
+    _, contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    return contours
+
+def tuple2ellipse(e):
+
+    cx = int(e[0][0])
+    cy = int(e[0][1])
+    w  = int(e[1][0]/2)
+    h  = int(e[1][1]/2)
+    a  = int(e[2])
+    
+    return ((cx, cy), (w, h), a)
+
+def fit_ellipses(contours):
+
+    ellipses = []
+
+    for contour in contours:
+        
+        if len(contour) >= 5:               # Fitting algorithm needs at least 5 points.
+            e0 = cv2.fitEllipse(contour)    # Fit ellipse
+            ellipses.append(tuple2ellipse(e0))
+
+    return ellipses
+
+
+
+def draw_ellipses(img, ellipses, color = 255):
+
+    for e in ellipses:
+
+        cv2.ellipse(img, e[0], e[1], e[2], 0, 360, color, 2)
+    
+    return img
+
+
+def find_contours_and_draw_ellipses(binary_image):
+
+    contours = find_external_contours(binary_image)
+    
+    return draw_ellipses(binary_image, fit_ellipses(contours))
+
+
+
 def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, circles=None):
     
-    cv2.namedWindow('images'   , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-    cv2.namedWindow('mag_grad' , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.namedWindow('sliders'  , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+    cv2.namedWindow('images'   , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+    cv2.namedWindow('diff'     , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+    cv2.namedWindow('mag_grad' , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.namedWindow('thresh'   , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+    cv2.namedWindow('ellipses' , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     
     # ind = 0
     # med_blur_size = 0
@@ -96,21 +145,31 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, c
         ksize          = min(ksize0, 31) if ksize0        % 2 == 1 else ksize0 + 1
     
         # Process image
-        gray = images[ind]
-        gray = cv2.medianBlur(gray, med_blur_size)
-        gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=ksize)
-        gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=ksize)
-        g = cv2.magnitude(gx, gy)
-        g = (255*normalize_image(g)).astype(np.uint8)
+        ref  = images[max(ind-1, 0)].copy()
+        gray = images[ind].copy()
+        diff = cv2.absdiff(ref, gray)
         
+        gray = cv2.medianBlur(gray, med_blur_size)
+        # gx   = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=ksize)
+        # gy   = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=ksize)
+        # g    = cv2.magnitude(gx, gy)
+        # g    = (255*normalize_image(g)).astype(np.uint8)
+        g = 255 - gray.copy()
+        
+
         val, im_b = cv2.threshold(g, 0, 255, cv2.THRESH_OTSU)
         print(val/255.0)
         
-        if circles:
-            x, y, r = circles[int(ind), :]
-            cv2.circle(gray, (x, y), r, (0, 255, 0), 4)
-            cv2.rectangle(gray, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
-        
+        # result = find_contours_and_draw_ellipses(im_b)
+        contours = find_external_contours(im_b)
+        ellipses = fit_ellipses(contours)
+        result   = draw_ellipses(np.stack((gray,)*3, axis=-1), ellipses, color = (0, 0, 255))
+
+        # if circles:
+        #     x, y, r = circles[int(ind), :]
+        #     cv2.circle(gray, (x, y), r, (0, 255, 0), 4)
+        #     cv2.rectangle(gray, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+        #
         # circles = cv2.HoughCircles(im_b, cv2.HOUGH_GRADIENT, 1.2, 200)
         # if circles is not None:
         #     # convert the (x, y) coordinates and radius of the circles to integers
@@ -122,9 +181,11 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, c
         #           cv2.circle(gray, (x, y), r, (0, 255, 0), 4)
         #           cv2.rectangle(gray, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
         
-        cv2.imshow("images"   , gray)
-        cv2.imshow("mag_grad" ,    g)
-        cv2.imshow("thresh"   , im_b)
+        cv2.imshow("images"   ,   gray)
+        cv2.imshow("diff"     ,   diff)
+        cv2.imshow("mag_grad" ,      g)
+        cv2.imshow("thresh"   ,   im_b)
+        cv2.imshow("ellipses" , result)
 
     cv2.destroyAllWindows()
 
