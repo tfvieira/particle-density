@@ -1,0 +1,21 @@
+{
+    "CROP_RECTANGLE": [
+        110,
+        90,
+        430,
+        350
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "../dataset/Calibration-1-4 Cells/Calibration-1-4 Cells.tif",
+    "INPUT_PATH": "../dataset/Calibration-1-4 Cells",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": null,
+    "N_IMAGES": 11,
+    "OUTPUT_PATH": "../results/Calibration-1-4 Cells",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": null,
+    "TITLE":"Calibration-1-4 Cells",
+    "BEST_BLURSCORE": 0
+}

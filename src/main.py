@@ -32,6 +32,11 @@ EXPERIMENTS = [
     "Four-mixing particles together",
     "3 particles_10 um",
     "Isolada-2-10 um",
+    "Calibration1_Single Cell",
+    "Calibration2_Single Cell",
+    "Isolada 3--2",
+    "Isolada 3--3",
+    "Calibration-1-4 Cells",
 ]
 EXPERIMENT = EXPERIMENTS[-1]
 
@@ -40,8 +45,7 @@ CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + ".json")
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
 
-# %%===========================================================================
-# Split one TIF image into many images, each corresponding to one TIF layer
+#%% Split one TIF image into many images, each corresponding to one TIF layer
 split_images(config["INPUT_FILENAME"], 
               config["OUTPUT_PATH"])
 
@@ -73,23 +77,13 @@ write_list_of_images(preprocessed_filenames, preprocessed_images)
 # # mom_list  = [os.path.join(config["OUTPUT_PATH"], "moments_" + str(x) + ".json") for x in range(config["N_IMAGES"])]
 # # areas, moments = process_ground_truths(name_list, gt_list, out_list, mom_list, config)
 
-# %%===========================================================================
-# Compute Blur measure
+#%% Compute Blur measure
 name_list = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
 images = read_list_of_images(name_list)
-show_list_of_images(images)
 
 rectangle = config['CROP_RECTANGLE']
 sizes = (rectangle[2]/2 * np.linspace(0, 1.5, 21)).astype('int')
-# size = int(percentages[0])
-
-#%%
-# # %%===========================================================================
-# # Compute Blur measure
-# name_list = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# # name_list = [os.path.join(config["OUTPUT_PATH"], "split_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# images = read_list_of_images(name_list)
 
 # distances = []
 # correlations = []
@@ -114,7 +108,7 @@ for size in sizes:
     
 #     # a = areas.copy()
     s = series.tolist()
-    series_norm = (s - np.min(s)) / (np.max(s) - np.min(s))
+    series_norm = (s - np.min(s)) / (np.max(s) - np.min(s) + 1e-22)
 #     # areas_norm  = (a - np.min(a)) / (np.max(a) - np.min(a))
 #     # distance = np.linalg.norm(series_norm - areas_norm, ord=2)
 #     # distances.append(distance)
@@ -189,77 +183,6 @@ df_norm.to_csv(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscor
 # df_norm.plot()
 # df_norm.transpose().plot.box()
 # plt.savefig(os.path.join(config["OUTPUT_PATH"], config["TITLE"] + f"_blurscores.png"))
-
-#%%
-from scipy.optimize import curve_fit
-
-def exponential(x, a, b, c):
-    return a * np.exp( b * x ) + c
-
-def power_law(x, a, b):
-    return a * np.power(x, b)
-
-def double_exponential(x, a1, t1, a2, t2, y0):
-    return a1 * np.exp( - x/t1 ) + a2 * np.exp( - x/t2 ) + y0
-
-blurscores = {}
-
-df = pd.read_csv("../results/Isolada-2-10 um/Isolada-2-10 um_blurscore_size_0067.csv")
-
-
-
-xdata = np.linspace(0, 29, 30)
-# xdata = np.linspace(15, 450, 30)
-ydata = 20 + 10*df.to_numpy().ravel()
-
-pars, cov = curve_fit(
-    f=exponential,
-    xdata=xdata,
-    ydata=ydata,
-    p0=[0, 0, 0], 
-    bounds = (-np.inf, np.inf), 
-    maxfev=150000,
-    )
-
-
-# pars, cov = curve_fit(
-#     f=power_law,
-#     xdata=xdata,
-#     ydata=ydata,
-#     p0=[0, 0], 
-#     bounds = (-np.inf, np.inf), 
-#     maxfev=150000,
-#     )
-
-curve = np.polyfit(xdata, ydata, 2)
-
-x = np.linspace(0, xdata.max(), 1000)
-# y = curve[0] * x**2 + curve[1] * x + curve[2]
-y = exponential(x, *pars)
-# y = power_law(x, *pars)
-
-
-
-
-fig, ax = plt.subplots()
-ax.scatter(xdata, ydata, s=20, color='#00b3b3', label='Data')
-ax.plot(x, y, '-b')
-# ax.set_yscale('log')
-# ax.set_ylim(0.1, 10)
-
-
-# plt.plot(xdata, ydata, 'ro')
-# plt.show()
-
-
-
-#%%
-x = np.array([11,21])
-y = np.expand_dims(x, axis=-1)
-
-
-
-
 
 
 #%%

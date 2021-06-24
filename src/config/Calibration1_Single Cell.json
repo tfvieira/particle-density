@@ -1,0 +1,21 @@
+{
+    "CROP_RECTANGLE": [
+        110,
+        90,
+        460,
+        350
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "../dataset/Calibration1_Single Cell/Calibration1_Single Cell.tif",
+    "INPUT_PATH": "../dataset/Calibration1_Single Cell",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": null,
+    "N_IMAGES": 18,
+    "OUTPUT_PATH": "../results/Calibration1_Single Cell",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": null,
+    "TITLE":"Calibration1_Single Cell",
+    "BEST_BLURSCORE": 0
+}

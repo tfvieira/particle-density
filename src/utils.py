@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from skimage import data, img_as_float
 from detect_blur_fft import detect_blur_fft
 from sklearn import preprocessing
+from scipy.optimize import curve_fit
 
 #%%
 
@@ -73,6 +74,74 @@ def find_external_contours(binary_image):
     _, contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     return contours
+
+def exponential( x, a, b ):
+    """
+    Define a single exponential function.
+    """
+    return a * ( np.exp( b * x ) )
+
+def double_exponential(x, a1, t1, a2, t2, y0):
+    """
+    Define a double exponential function.
+    """
+    return a1 * np.exp( - x/t1 ) + a2 * np.exp( - x/t2 ) + y0
+
+
+def power_law(x, a, b):
+    """
+    Define a single power law function.
+    """
+    return a * np.power(x, b)
+
+
+
+def fit_single_exponential (x, y, maxfev = 1e3):
+    """
+    Fit a single exponential to a set of data points defined by _x_ and _y_.
+    """
+    pars, cov = curve_fit(
+        f      = exponential,
+        xdata  = x,
+        ydata  = y,
+        p0     = [0, 0], 
+        bounds = (-np.inf, np.inf), 
+        maxfev = maxfev,
+        )
+
+    a, b = pars
+    s1 = np.sqrt(cov[0,0])
+    s2 = np.sqrt(cov[0,0])
+    print(f'a = {a:.4f} +- {s1:.4f}')
+    print(f'b = {b:.4f} +- {s2:.4f}')
+
+    return pars, cov
+
+def plot_data_and_single_exponential(x_data, y_data, x_curve_fit, y_curve_fit):
+    """
+    Plot a scatter data _x_ and _y_ and the correponding single exponential fit
+    """
+
+    fig, ax = plt.subplots()
+    ax.plot(
+        x_data, y_data, 
+        marker='.', markersize=10, color='#00b3b3', 
+        label='Data',
+        linestyle = '-', linewidth = .5)
+
+    ax.plot(x_curve_fit, y_curve_fit, '-b', label='$a\cdot e^{b x}$')
+
+    # ax.set_yscale('log')
+    # ax.set_ylim(1e-2, 1)
+    # plt.grid(b = True, which = 'minor')
+
+    plt.ylabel('Blur score')
+    plt.xlabel('Image index')
+    plt.legend()
+    plt.show()
+
+    return None
+
 
 def tuple2ellipse(e):
 
@@ -337,3 +406,21 @@ def normalize_df_min_max(df):
 
     return df_norm
 
+
+#%% Example to load a scatter plot, perform curve fitting and plot the result
+# df = pd.read_csv("../results/Isolada-2-10 um/Isolada-2-10 um_blurscore_size_0067.csv")
+
+# x_data = np.linspace(0, 29, 30)
+# y_data = df.to_numpy().ravel()
+
+# pars, cov = fit_single_exponential(x_data, y_data, maxfev=1000)
+# a, b = pars
+# s1 = np.sqrt(cov[0,0])
+# s2 = np.sqrt(cov[1,1])
+
+# x_curve_fit = np.linspace(0, x_data.max(), 1000)
+# y_curve_fit = exponential(x_curve_fit, *pars)
+
+# plot_data_and_single_exponential(x_data, y_data, x_curve_fit, y_curve_fit)
+
+#%%

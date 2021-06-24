@@ -1,0 +1,21 @@
+{
+    "CROP_RECTANGLE": [
+        110,
+        90,
+        430,
+        350
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "../dataset/Isolada 3--3/Isolada 3--3.tif",
+    "INPUT_PATH": "../dataset/Isolada 3--3",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": null,
+    "N_IMAGES": 11,
+    "OUTPUT_PATH": "../results/Isolada 3--3",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": null,
+    "TITLE":"Isolada 3--3",
+    "BEST_BLURSCORE": 0
+}
