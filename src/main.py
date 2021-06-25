@@ -38,36 +38,52 @@ EXPERIMENTS = [
     "Isolada 3--3",
     "Calibration-1-4 Cells",
 ]
-EXPERIMENT = EXPERIMENTS[-1]
+EXPERIMENT = EXPERIMENTS[1]
 
 # Read configuration parameters from JSON file
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + ".json")
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
 
-#%% Split one TIF image into many images, each corresponding to one TIF layer
-split_images(config["INPUT_FILENAME"], 
-              config["OUTPUT_PATH"])
-
-# %%===========================================================================
-# Crop the images to contain only the particles
-crop_images(config["INPUT_FILENAME"], 
-            config["OUTPUT_PATH"], 
-            rectangle=config["CROP_RECTANGLE"])
-
-# %%===========================================================================
-# Pre-process all images
-name_list = [os.path.join(config["OUTPUT_PATH"], "crop_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-images = read_list_of_images(name_list)
-preprocessed_images = preprocess_list_of_images(images)
-preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-write_list_of_images(preprocessed_filenames, preprocessed_images)
+# #%% Split one TIF image into many images, each corresponding to one TIF layer
+# split_images(config["INPUT_FILENAME"], 
+#               config["OUTPUT_PATH"])
 
 # # %%===========================================================================
-# # Show list of pre-processed images
+# # Crop the images to contain only the particles
+# crop_images(config["INPUT_FILENAME"], 
+#             config["OUTPUT_PATH"], 
+#             rectangle=config["CROP_RECTANGLE"])
+
+# # %%===========================================================================
+# # Pre-process all images
+# name_list = [os.path.join(config["OUTPUT_PATH"], "crop_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+# images = read_list_of_images(name_list)
+# preprocessed_images = preprocess_list_of_images(images)
 # preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
-# preprocessed_images = read_list_of_images(preprocessed_filenames)
-# show_list_of_images(preprocessed_images)
+# write_list_of_images(preprocessed_filenames, preprocessed_images)
+
+# #%%
+# g = create_2D_gaussian(
+#     shape = (500, 1000), 
+#     mx = 500, 
+#     my = 250, 
+#     sx = 60, 
+#     sy = 20,
+#     theta = -30)
+
+# g2 = cv2.normalize(g.astype('float'), None, 1.0, 0.0, cv2.NORM_MINMAX)
+
+# cv2.imshow("g2", g2)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
+# %===========================================================================
+# # Show list of pre-processed images
+# preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "crop_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+preprocessed_filenames = [os.path.join(config["OUTPUT_PATH"], "preprocessed_" + str(x) + ".tif") for x in range(config["N_IMAGES"])]
+preprocessed_images = read_list_of_images(preprocessed_filenames)
+show_list_of_images(preprocessed_images)
 
 # # %%===========================================================================
 # # Process Ground truths
@@ -199,6 +215,7 @@ for EXPERIMENT in EXPERIMENTS:
 # for key, arr in blurscores.items():
 
 #     blurscores[key] = arr[:18].flatten()
+
 
 # #%%
 # d = pd.DataFrame.from_dict(blurscores)
