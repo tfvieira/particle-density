@@ -1,21 +1,22 @@
 {
     "CROP_RECTANGLE": [
-        180,
-        140,
-        300,
-        300
+        200,
+        160,
+        260,
+        260
     ],
     "GRAD_WSIZE": 31,
-    "INPUT_FILENAME": "..\\dataset\\Isolada-2-10 um\\Isolada-2-10 um.tif",
-    "INPUT_PATH": "..\\dataset\\Isolada-2-10 um",
+    "INPUT_FILENAME": "../dataset/Isolada-2-10 um/Isolada-2-10 um.tif",
+    "INPUT_PATH": "../dataset/Isolada-2-10 um",
     "MEDBLUR_WSIZE": 23,
     "METERS_PER_PIXEL_RATIO": null,
     "N_IMAGES": 31,
-    "OUTPUT_PATH": "..\\results\\Isolada-2-10 um",
+    "OUTPUT_PATH": "../results/Isolada-2-10 um",
     "SNAKES_N_CONTOURS": 6,
     "SNAKES_N_ITER": 500,
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
     "TITLE":"Isolada-2-10 um",
-    "BEST_BLURSCORE": 210
+    "BEST_BLURSCORE": 210,
+    "GROUND_TRUTHS_AVAILABLE": null
 }

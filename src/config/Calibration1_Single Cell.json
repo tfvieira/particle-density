@@ -17,5 +17,6 @@
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
     "TITLE":"Calibration1_Single Cell",
-    "BEST_BLURSCORE": 0
+    "BEST_BLURSCORE": 0,
+    "GROUND_TRUTHS_AVAILABLE": null
 }

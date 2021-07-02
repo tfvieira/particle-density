@@ -6,16 +6,17 @@
         640
     ],
     "GRAD_WSIZE": 31,
-    "INPUT_FILENAME": "..\\dataset\\Calibration 10-microns\\Calibration 10-microns.tif",
-    "INPUT_PATH": "..\\dataset\\Calibration 10-microns",
+    "INPUT_FILENAME": "../dataset/Calibration 10-microns/Calibration 10-microns.tif",
+    "INPUT_PATH": "../dataset/Calibration 10-microns",
     "MEDBLUR_WSIZE": 23,
     "METERS_PER_PIXEL_RATIO": null,
     "N_IMAGES": 18,
-    "OUTPUT_PATH": "..\\results\\Calibration 10-microns",
+    "OUTPUT_PATH": "../results/Calibration 10-microns",
     "SNAKES_N_CONTOURS": 6,
     "SNAKES_N_ITER": 500,
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
     "TITLE":"Calibration 10-microns",
-    "BEST_BLURSCORE": 183
+    "BEST_BLURSCORE": 183,
+    "GROUND_TRUTHS_AVAILABLE": 1
 }

@@ -17,5 +17,6 @@
     "SNAKES_THRESH": 0.83,
     "SQUARED_METERS_PER_PIXEL_RATIO": null,
     "TITLE":"Isolada 3--3",
-    "BEST_BLURSCORE": 0
+    "BEST_BLURSCORE": 0,
+    "GROUND_TRUTHS_AVAILABLE": null
 }

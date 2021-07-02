@@ -19,7 +19,23 @@ from sklearn import preprocessing
 from scipy.optimize import curve_fit
 from detect_blur_fft import detect_blur_fft
 
+plt.rcParams.update({'figure.max_open_warning': 0})
+
 #%%
+def read_json(json_filename):
+
+    with open(json_filename, 'r') as fp:
+        x = json.load(fp)
+    
+    return x
+
+def write_json (x, json_filename, sort_keys=True, indent=4):
+    
+    with open(json_filename, 'w') as fp:
+        json.dump(x, fp, sort_keys=sort_keys, indent=indent)
+    
+    return None
+
 
 def create_2D_gaussian(
     shape = (100, 100), 
@@ -251,7 +267,7 @@ def find_contours_and_draw_ellipses(binary_image):
 
 
 
-def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, circles=None):
+def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size = 20, thresh=0, circles=None):
     
     cv2.namedWindow('sliders'   , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.namedWindow('gray'      , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
@@ -262,14 +278,10 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, c
     cv2.namedWindow('fft_hist'  , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.namedWindow('ellipses'  , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     
-    # ind = 0
-    # med_blur_size = 0
-    # ksize = 0
-    # thresh = 0
-    
     cv2.createTrackbar('ind'           , 'sliders', ind             , len(images)-1, do_nothing)
     cv2.createTrackbar('med_blur_size' , 'sliders', med_blur_size   , 300,           do_nothing)
     cv2.createTrackbar('ksize'         , 'sliders', ksize           , 31 ,           do_nothing)
+    cv2.createTrackbar('gauss_size'    , 'sliders', gauss_size      , 500,           do_nothing)
     # cv2.createTrackbar('thresh'        , 'sliders', thresh          , 255,           do_nothing)
 
     while 0xFF & cv2.waitKey(1) != ord('q'):
@@ -279,6 +291,7 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, c
         # thresh         = cv2.getTrackbarPos('thresh', 'sliders')
         med_blur_size  = cv2.getTrackbarPos('med_blur_size', 'sliders')
         ksize0         = cv2.getTrackbarPos('ksize'        , 'sliders')
+        gauss_size     = cv2.getTrackbarPos('gauss_size'   , 'sliders')
         med_blur_size  = med_blur_size   if med_blur_size % 2 == 1 else med_blur_size + 1
         ksize          = min(ksize0, 31) if ksize0        % 2 == 1 else ksize0 + 1
     
@@ -287,70 +300,20 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, thresh=0, c
         gray = images[ind].copy()
         diff = cv2.absdiff(ref, gray)
         
-        # blur, _, mag = detect_blur_fft(diff, size=0, verbose=True)
-
-        
-        total_sum, fft_shift, fft_hist = compute_blur(gray, annotate_on_image = True)
-        print(total_sum)
-
-        # fft       = np.fft.fft2(gray)
-        # s         = np.abs(fft.ravel()).sum()
-        # fft       = 20 * np.log(1 + np.abs(fft))
-        # # print(f"Maximum value = {fft.ravel().max()}, First value = {np.abs(fft[0,0])}")
-        # fft_shift = np.fft.fftshift(fft)
-        # fft_shift = normalize_image(fft_shift)
-        
-        # pars = (fft_shift.shape[1]/2, fft_shift.shape[0]/2, 40, 40) # mx, my, sx, sy
-        # gaussian = create_2D_gaussian(fft_shift.shape, *pars)
-        # fft_shift = gaussian * fft_shift#.astype('float')
-        # # score     = fft_shift.ravel().sum()
-        # # print(np.abs(score))
-        # fft_shift = (255*normalize_image(fft_shift)).astype('uint8')
-        # fft_hist  = compute_histogram_1C(fft_shift)
-
-        # fft_shift = cv2.putText(
-        #     fft_shift, f"Max: {np.abs(fft[0,0])*s:.4e}", 
-        #     (50,250), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA
-        #     )
-        # fft_shift = cv2.putText(
-        #     fft_shift, f"Sum: {fft_shift.ravel().sum()*s:.4e}", 
-        #     (50,300), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA
-        #     )
-
-        gray = cv2.medianBlur(gray, med_blur_size)
+        blur = cv2.medianBlur(gray, med_blur_size)
         gx   = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=ksize)
         gy   = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=ksize)
         g    = cv2.magnitude(gx, gy)
         g    = (255*normalize_image(g)).astype(np.uint8)
-        # g = 255 - gray.copy()
 
-
+        # blur, _, mag = detect_blur_fft(diff, size=0, verbose=True)
+        spectrum_sum, total_sum, fft_shift, fft_hist = compute_blur(g, gaussian_sigma = gauss_size, annotate_on_image = True)
+        print(f'Spectrum sum: {spectrum_sum}')#\t\t total_sum: {total_sum}')
 
         val, im_b = cv2.threshold(g, 0, 255, cv2.THRESH_OTSU)
-        # print(val/255.0)
-        
-        # result = find_contours_and_draw_ellipses(im_b)
-        # contours = find_external_contours(im_b)
-        # ellipses = fit_ellipses(contours)
-        # result   = draw_ellipses(np.stack((gray,)*3, axis=-1), ellipses, color = (0, 0, 255))
-
-        # if circles:
-        #     x, y, r = circles[int(ind), :]
-        #     cv2.circle(gray, (x, y), r, (0, 255, 0), 4)
-        #     cv2.rectangle(gray, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
-        #
-        # circles = cv2.HoughCircles(im_b, cv2.HOUGH_GRADIENT, 1.2, 200)
-        # if circles is not None:
-        #     # convert the (x, y) coordinates and radius of the circles to integers
-        #  	circles = np.round(circles[0, :]).astype("int")
-        #  	# loop over the (x, y) coordinates and radius of the circles
-        #  	for (x, y, r) in circles:
-        #           # draw the circle in the output image, then draw a rectangle
-        #           # corresponding to the center of the circle
-        #           cv2.circle(gray, (x, y), r, (0, 255, 0), 4)
-        #           cv2.rectangle(gray, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
 
         cv2.imshow("gray"      ,        gray)
+        cv2.imshow("blur"      ,        blur)
         cv2.imshow("fft_shift" ,   fft_shift)
         cv2.imshow("fft_hist"  ,    fft_hist)
         cv2.imshow("diff"      ,        diff)
@@ -395,25 +358,21 @@ def process_ground_truths(name_list, gt_list, out_list, mom_list, config):
     
     areas = []
     moments = []
-    for i in range(config["N_IMAGES"]):
+    for i in range(config['N_IMAGES']):
     
         img = imgs[i]
         gt = ground_thruths[i]
     
         bgr = np.stack((img,)*3, axis=-1)
-        contours = cv2.findContours(gt, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(gt, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         M = cv2.moments(contours[0])
         
         areas.append(int(M['m00']))
         moments.append(M)
     
-        cv2.drawContours(bgr, contours[1], -1, (0,255,0), 3)
+        cv2.drawContours(bgr, contours, -1, (0,255,0), 3)
     
-        # cv2.namedWindow("bgr", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-        # cv2.imshow("bgr", bgr)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-    
+
         cv2.imwrite(out_list[i], bgr)
     
         with open(mom_list[i], 'w') as fp:
@@ -526,11 +485,11 @@ def normalize_df_min_max(df):
 # plot_data_and_single_exponential(x_data, y_data, x_curve_fit, y_curve_fit)
 
 #%%
-def compute_blur(img, annotate_on_image = False, show_histogram = False):
+def compute_blur(img, gaussian_sigma = 20, annotate_on_image = False, show_histogram = False, verbose=True):
 
     # Compute the Fast Fourier Transform and sum the result:
     fft       = np.fft.fft2(img)
-    total_sum = np.abs(fft).sum()
+    total_sum = np.abs(fft).ravel().sum()
     
     # Scale and shift the spectrum to improve visualization using the logarithmic transform
     fft       = 20 * np.log(1 + np.abs(fft))
@@ -539,12 +498,19 @@ def compute_blur(img, annotate_on_image = False, show_histogram = False):
 
     # Filter the spectrum using a gaussian centered on the middle of the image.
     # This is done to discard the influence of high frequencies.    
-    pars = (fft_shift.shape[1]/2, fft_shift.shape[0]/2, 40, 40) # mx, my, sx, sy
-    fft_shift = fft_shift * create_2D_gaussian(fft_shift.shape, *pars)
+    gaussian_pars = (
+        fft_shift.shape[1]/2, 
+        fft_shift.shape[0]/2, 
+        gaussian_sigma, 
+        gaussian_sigma) # mx, my, sx, sy
+
+    fft_shift = fft_shift * create_2D_gaussian(fft_shift.shape, *gaussian_pars)
 
     # Normalize 
-    fft_shift = (255*normalize_image(fft_shift)).astype('uint8')
+    fft_shift = (255 * normalize_image(fft_shift)).astype('uint8')
     
+    spectrum_sum = fft_shift.ravel().sum()
+
     if show_histogram:
         fft_hist  = compute_histogram_1C(fft_shift)
     else:
@@ -553,11 +519,13 @@ def compute_blur(img, annotate_on_image = False, show_histogram = False):
     if annotate_on_image:
         fft_shift = cv2.putText(
             fft_shift, f"Max: {np.abs(fft[0,0]):.4e}", 
-            (50,250), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA
+            (10,10), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA
             )
         fft_shift = cv2.putText(
             fft_shift, f"Sum: {fft_shift.sum():.4e}", 
-            (50,300), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA
+            (10,60), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA
             )
     
-    return total_sum, fft_shift, fft_hist
+    print(f'spectrum_sum = {spectrum_sum}')
+
+    return spectrum_sum, total_sum, fft_shift, fft_hist
