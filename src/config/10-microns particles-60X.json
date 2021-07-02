@@ -2,9 +2,9 @@
     "CIRCLES_GT": null,
     "CROP_RECTANGLE": [
         1000,
-        600,
-        1200,
-        600
+        800,
+        400,
+        300
     ],
     "GRAD_WSIZE": 31,
     "INPUT_FILENAME": "../dataset/10-microns particles-60X/10-microns particles-60X.tif",

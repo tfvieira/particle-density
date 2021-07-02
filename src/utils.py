@@ -278,10 +278,12 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
     cv2.namedWindow('fft_hist'  , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.namedWindow('ellipses'  , cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     
+    gauss_size_2 = 5
     cv2.createTrackbar('ind'           , 'sliders', ind             , len(images)-1, do_nothing)
     cv2.createTrackbar('med_blur_size' , 'sliders', med_blur_size   , 300,           do_nothing)
     cv2.createTrackbar('ksize'         , 'sliders', ksize           , 31 ,           do_nothing)
     cv2.createTrackbar('gauss_size'    , 'sliders', gauss_size      , 500,           do_nothing)
+    cv2.createTrackbar('gauss_size_2'  , 'sliders', gauss_size_2    , 500,           do_nothing)
     # cv2.createTrackbar('thresh'        , 'sliders', thresh          , 255,           do_nothing)
 
     while 0xFF & cv2.waitKey(1) != ord('q'):
@@ -292,6 +294,8 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
         med_blur_size  = cv2.getTrackbarPos('med_blur_size', 'sliders')
         ksize0         = cv2.getTrackbarPos('ksize'        , 'sliders')
         gauss_size     = cv2.getTrackbarPos('gauss_size'   , 'sliders')
+        gauss_size_2   = cv2.getTrackbarPos('gauss_size_2' , 'sliders')
+
         med_blur_size  = med_blur_size   if med_blur_size % 2 == 1 else med_blur_size + 1
         ksize          = min(ksize0, 31) if ksize0        % 2 == 1 else ksize0 + 1
     
@@ -306,19 +310,69 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
         g    = cv2.magnitude(gx, gy)
         g    = (255*normalize_image(g)).astype(np.uint8)
 
+
+
+        n = gray.size
+        gray_norm = gray / (np.sqrt( (1/n)  *  np.sum(gray ** 2)))
+
+        # Compute the Fast Fourier Transform and sum the result:
+        fft       = np.fft.fft2(gray_norm)
+        
+        # Scale and shift the spectrum to improve visualization using the logarithmic transform
+        fft       = 20 * np.log(1 + np.abs(fft))
+        fft_shift = np.fft.fftshift(fft)
+        # fft_shift = normalize_image(fft_shift)
+
+        # fft_shift = fft_shift / (fft_shift.shape[0] * fft_shift.shape[1])
+
+        # Filter the spectrum using a gaussian centered on the middle of the image.
+        # This is done to discard the influence of high frequencies.    
+        gaussian_pars = (
+            fft_shift.shape[1]/2, 
+            fft_shift.shape[0]/2, 
+            gauss_size, 
+            gauss_size) # mx, my, sx, sy
+
+        gaussian_pars_2 = (
+            fft_shift.shape[1]/2, 
+            fft_shift.shape[0]/2, 
+            gauss_size_2, 
+            gauss_size_2) # mx, my, sx, sy
+
+        gauss = create_2D_gaussian(fft_shift.shape, *gaussian_pars)
+        gauss_2 = create_2D_gaussian(fft_shift.shape, *gaussian_pars_2)
+        gauss_3 = gauss - gauss_2
+
+        fft_shift = fft_shift * (
+            gauss - gauss_2
+        )
+
+        
+
+
+        spectrum_sum = fft_shift.ravel().sum()
+
+        print(f'spectrum_sum = {spectrum_sum}')
+
+
+
+
+
         # blur, _, mag = detect_blur_fft(diff, size=0, verbose=True)
-        spectrum_sum, total_sum, fft_shift, fft_hist = compute_blur(g, gaussian_sigma = gauss_size, annotate_on_image = True)
+        # spectrum_sum, total_sum, fft_shift, fft_hist = compute_blur(gray, gaussian_sigma = gauss_size, annotate_on_image = True)
         print(f'Spectrum sum: {spectrum_sum}')#\t\t total_sum: {total_sum}')
 
         val, im_b = cv2.threshold(g, 0, 255, cv2.THRESH_OTSU)
 
         cv2.imshow("gray"      ,        gray)
+        cv2.imshow("gray_norm"      ,        normalize_image(gray_norm))
         cv2.imshow("blur"      ,        blur)
-        cv2.imshow("fft_shift" ,   fft_shift)
-        cv2.imshow("fft_hist"  ,    fft_hist)
+        cv2.imshow("fft_shift" ,   normalize_image(fft_shift))
+        # cv2.imshow("fft_hist"  ,    fft_hist)
         cv2.imshow("diff"      ,        diff)
         cv2.imshow("mag_grad"  ,           g)
         cv2.imshow("thresh"    ,        im_b)
+        cv2.imshow("gauss"     ,     gauss_3)
         # cv2.imshow("ellipses" , result)
 
     cv2.destroyAllWindows()
