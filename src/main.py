@@ -15,9 +15,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import shutil
 
-from utils  import * #read_list_of_images
-from snakes import *
-from detect_blur_fft import detect_blur_fft
+from skimage.color import rgb2gray
+from skimage import data
+from skimage.filters import gaussian
+from skimage.segmentation import active_contour
+
+from utils  import *
 
 plt.style.use('seaborn')
 plt.rcParams['figure.dpi'] = 300
@@ -28,6 +31,9 @@ CONFIG_PATH = 'config'
 
 EXPERIMENTS = [
     '10-microns particles-60X',
+    'Isolada 3--3',
+    'Isolada 3--2',
+    'Isolada-2-10 um',
     'Calibration2_Single Cell',
     'Calibration1_Single Cell',
     'Four-mixing particles together',
@@ -35,13 +41,9 @@ EXPERIMENTS = [
     'Calibration 10-microns',
     '30 microns-beads-60X-measuring 2',
     'Calibration-1-4 Cells',
-    'Isolada 3--3',
-    'Isolada 3--2',
-    'Isolada-2-10 um',
     '3 particles_10 um',
 ]
 
-#%%
 # for EXPERIMENT in EXPERIMENTS:
 EXPERIMENT = EXPERIMENTS[0]
 
@@ -50,7 +52,8 @@ CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
 
-# %% Split one TIF image into many images, each corresponding to one TIF layer
+# %%===========================================================================
+# Split one TIF image into many images, each corresponding to one TIF layer
 split_images(config['INPUT_FILENAME'], 
             os.path.join(config['OUTPUT_PATH'], 'split'))
 
@@ -61,6 +64,50 @@ crop_images(config['INPUT_FILENAME'],
             rectangle=config['CROP_RECTANGLE'])
 
 # %%===========================================================================
+# Blur the images
+name_list = [os.path.join(config['OUTPUT_PATH'], 'crop', 'crop_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+images = read_list_of_images(name_list)
+images = blur_list_of_images(images)
+filenames = [os.path.join(config['OUTPUT_PATH'], 'blur', 'blur_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+write_list_of_images(filenames, images)
+
+
+# %%===========================================================================
+# Equalize the cropped images to reduce noise
+name_list = [os.path.join(config['OUTPUT_PATH'], 'crop', 'crop_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+images = read_list_of_images(name_list)
+images = equalize_list_of_images(images)
+filenames = [os.path.join(config['OUTPUT_PATH'], 'equalize', 'equalize_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+write_list_of_images(filenames, images)
+
+
+
+
+
+# %%===========================================================================
+# Find the Laplacian
+name_list = [os.path.join(config['OUTPUT_PATH'], 'blur', 'blur_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+images = read_list_of_images(name_list)
+images = laplacian_list_of_images(images)
+filenames = [os.path.join(config['OUTPUT_PATH'], 'laplacian', 'laplacian_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+write_list_of_images(filenames, images)
+
+
+# %%===========================================================================
+# # Show list of pre-processed images
+filenames = [os.path.join(config['OUTPUT_PATH'], 'blur', 'blur_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+images = read_list_of_images(filenames)
+show_list_of_images(images)
+
+
+
+
+
+
+
+
+
+# %%===========================================================================
 # Pre-process all images
 name_list = [os.path.join(config['OUTPUT_PATH'], 'crop', 'crop_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
 images = read_list_of_images(name_list)
@@ -68,12 +115,6 @@ preprocessed_images = preprocess_list_of_images(images)
 preprocessed_filenames = [os.path.join(config['OUTPUT_PATH'], 'preprocessed', 'preprocessed_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
 write_list_of_images(preprocessed_filenames, preprocessed_images)
 
-# %===========================================================================
-# # Show list of pre-processed images
-preprocessed_filenames = [os.path.join(config['OUTPUT_PATH'], 'crop', 'crop_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
-# preprocessed_filenames = [os.path.join(config['OUTPUT_PATH'], 'preprocessed', 'preprocessed_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
-preprocessed_images = read_list_of_images(preprocessed_filenames)
-show_list_of_images(preprocessed_images)
 
 # %%===========================================================================
 # Process Ground truths
@@ -414,3 +455,49 @@ plt.savefig(os.path.join('calibrations', 'calibration_' + config['TITLE'] + '.pn
 #     output_figname = os.path.join(config["OUTPUT_PATH"], "snakes_fig_" + str(k))
 #     plt.savefig(output_figname)
 
+#%%
+areas = np.zeros(config['N_IMAGES'])
+
+#%%
+filenames = [os.path.join(config['OUTPUT_PATH'], 'crop', 'crop_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+images = read_list_of_images(filenames)
+
+ind = 1 # 4, 5, 8, 9, 10, 11-19
+image = images[ind]
+img = rgb2gray(image)
+
+s = np.linspace(0, 2*np.pi, 400)
+r = 150 + 150*np.sin(s)
+c = 200 + 150*np.cos(s)
+init = np.array([r, c]).T
+
+if ind in range(4) or ind in range(6,10):
+    snake_pars = {'alpha': 0.015, 'beta': 1, 'gamma': 0.001, 'w_edge': 1}
+elif ind == 4:
+    snake_pars = {'alpha': 0.020, 'beta': 10, 'gamma': 0.0019, 'w_edge': 1}
+elif ind == 10:
+    snake_pars = {'alpha': 0.02, 'beta': 25, 'gamma': 0.01, 'w_edge': 1}
+else:
+    snake_pars = {'alpha': 0.02, 'beta': 25, 'gamma': 0.1, 'w_edge': 1}
+
+snake = active_contour(
+    gaussian(img, 3, preserve_range=False),
+    init, alpha=snake_pars['alpha'],
+    beta=snake_pars['beta'],
+    gamma=snake_pars['gamma'],
+    w_edge=snake_pars['w_edge']
+)
+
+M = cv2.moments(snake)
+areas[ind] = int(M['m00'])
+
+fig, ax = plt.subplots(1,2, figsize=(12, 6))
+ax[0].imshow(img, cmap=plt.cm.gray)
+ax[0].plot(init[:, 1], init[:, 0], '--r', lw=3)
+ax[0].plot(snake[:, 1], snake[:, 0], '-b', lw=3)
+ax[0].axis([0, img.shape[1], img.shape[0], 0])
+ax[0].grid(False)
+ax[1].stem(range(config['N_IMAGES']), areas)
+plt.show()
+
+# %%

@@ -14,10 +14,14 @@ import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt
 from skimage import data, img_as_float
-from detect_blur_fft import detect_blur_fft
 from sklearn import preprocessing
 from scipy.optimize import curve_fit
-from detect_blur_fft import detect_blur_fft
+
+from skimage import data, img_as_float
+from skimage.segmentation import (morphological_chan_vese,
+                                  morphological_geodesic_active_contour,
+                                  inverse_gaussian_gradient,
+                                  checkerboard_level_set)
 
 plt.rcParams.update({'figure.max_open_warning': 0})
 
@@ -125,6 +129,8 @@ def crop_images(input_filename, output_path, rectangle, output_name="crop", verb
         cv2.imwrite(output_filename, output_image)
     
     return None
+
+
 
 def normalize_image(image):
     """
@@ -333,25 +339,26 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
             gauss_size, 
             gauss_size) # mx, my, sx, sy
 
-        gaussian_pars_2 = (
-            fft_shift.shape[1]/2, 
-            fft_shift.shape[0]/2, 
-            gauss_size_2, 
-            gauss_size_2) # mx, my, sx, sy
+        # gaussian_pars_2 = (
+        #     fft_shift.shape[1]/2, 
+        #     fft_shift.shape[0]/2, 
+        #     gauss_size_2, 
+        #     gauss_size_2) # mx, my, sx, sy
 
         gauss = create_2D_gaussian(fft_shift.shape, *gaussian_pars)
-        gauss_2 = create_2D_gaussian(fft_shift.shape, *gaussian_pars_2)
-        gauss_3 = gauss - gauss_2
+        # gauss_2 = create_2D_gaussian(fft_shift.shape, *gaussian_pars_2)
+        # gauss_3 = gauss - gauss_2
 
-        fft_shift = fft_shift * (
-            gauss - gauss_2
-        )
-
+        # fft_shift = fft_shift * (gauss - gauss_2)
+        fft_shift = fft_shift * gauss
+        spectrum_sum = fft_shift.ravel().sum()
+        
         
 
 
-        spectrum_sum = fft_shift.ravel().sum()
-
+        fft_shift = (255 * normalize_image(fft_shift)).astype(np.uint8)
+        fft_hist  = compute_histogram_1C(fft_shift)
+        
         print(f'spectrum_sum = {spectrum_sum}')
 
 
@@ -368,11 +375,11 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
         cv2.imshow("gray_norm"      ,        normalize_image(gray_norm))
         cv2.imshow("blur"      ,        blur)
         cv2.imshow("fft_shift" ,   normalize_image(fft_shift))
-        # cv2.imshow("fft_hist"  ,    fft_hist)
+        cv2.imshow("fft_hist"  ,    fft_hist)
         cv2.imshow("diff"      ,        diff)
         cv2.imshow("mag_grad"  ,           g)
         cv2.imshow("thresh"    ,        im_b)
-        cv2.imshow("gauss"     ,     gauss_3)
+        # cv2.imshow("gauss"     ,     gauss_3)
         # cv2.imshow("ellipses" , result)
 
     cv2.destroyAllWindows()
@@ -386,6 +393,34 @@ def write_list_of_images(list_of_filenames, list_of_images):
 def print_array_minmax(arr, name=""):
     print(name + f" (min,max) = ({arr.min():.2f}, {arr.max():.2f})")
     return None
+
+def blur_list_of_images(images, med_blur_size = 13):
+    
+    output_images= []
+    for image in images:
+        output_image = cv2.medianBlur(image, med_blur_size)
+        output_images.append(output_image)
+    
+    return output_images
+
+def laplacian_list_of_images(images):
+    
+    output_images= []
+    for image in images:
+        output_image = cv2.Laplacian(image, cv2.CV_64F)
+        output_image = (255 * normalize_image(output_image)).astype(np.uint8)
+        output_images.append(output_image)
+    
+    return output_images
+
+def equalize_list_of_images(images):
+    
+    output_images= []
+    for image in images:
+        output_image = cv2.equalizeHist(image)
+        output_images.append(output_image)
+    
+    return output_images
 
 def preprocess_list_of_images(images, med_blur_size = 27, ksize = 31):
     
@@ -560,10 +595,11 @@ def compute_blur(img, gaussian_sigma = 20, annotate_on_image = False, show_histo
 
     fft_shift = fft_shift * create_2D_gaussian(fft_shift.shape, *gaussian_pars)
 
-    # Normalize 
-    fft_shift = (255 * normalize_image(fft_shift)).astype('uint8')
-    
     spectrum_sum = fft_shift.ravel().sum()
+    
+    # Normalize 
+    fft_shift = normalize_image(fft_shift)
+    
 
     if show_histogram:
         fft_hist  = compute_histogram_1C(fft_shift)
@@ -583,3 +619,116 @@ def compute_blur(img, gaussian_sigma = 20, annotate_on_image = False, show_histo
     print(f'spectrum_sum = {spectrum_sum}')
 
     return spectrum_sum, total_sum, fft_shift, fft_hist
+
+#%%
+#%%
+def store_evolution_in(lst):
+    """Returns a callback function to store the evolution of the level sets in
+    the given list.
+    """
+
+    def _store(x):
+        lst.append(np.copy(x))
+
+    return _store
+
+#%%
+# _, output = cv2.imreadmulti("../results/pre_processed.tif", [], cv2.IMREAD_GRAYSCALE)
+
+
+def compute_snakes(image, threshold=0.83, n_iter=400, verbose=True):
+    
+    # Initial level set
+    init_level_set = np.zeros(image.shape, dtype=np.int8)
+    init_level_set[10:-10, 10:-10] = 1
+    # List with intermediate results for plotting the evolution
+    evolution = []
+    callback = store_evolution_in(evolution)
+    ls = morphological_geodesic_active_contour(image, n_iter, init_level_set,
+                                               smoothing=2, balloon=-1,
+                                               threshold=threshold,
+                                               iter_callback=callback)
+    return evolution
+
+
+#%%
+def detect_blur_fft(image, size=0, thresh=10, plot_results=False, verbose=False):
+    """
+    Assign 
+
+    Parameters
+    ----------
+    image : TYPE
+        DESCRIPTION.
+    size : TYPE, optional
+        DESCRIPTION. The default is 0.
+    thresh : TYPE, optional
+        DESCRIPTION. The default is 10.
+    plot_results : TYPE, optional
+        DESCRIPTION. The default is False.
+    verbose : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    mean : TYPE
+        DESCRIPTION.
+    TYPE
+        DESCRIPTION.
+
+    """
+
+    # grab the dimensions of the image and use the dimensions to
+    # derive the center (x, y)-coordinates
+    (h, w) = image.shape
+    (cX, cY) = (int(w / 2.0), int(h / 2.0))
+
+    # compute the FFT to find the frequency transform, then shift
+    # the zero frequency component (i.e., DC component located at
+    # the top-left corner) to the center where it will be more
+    # easy to analyze
+    fft = np.fft.fft2(image)
+    fftShift = np.fft.fftshift(fft)
+
+    # check to see if we are visualizing our output
+    if plot_results:
+        # compute the magnitude spectrum of the transform
+        magnitude = 20 * np.log(1 + np.abs(fftShift))
+
+        # display the original input image
+        (fig, ax) = plt.subplots(1, 2, )
+        ax[0].imshow(image, cmap="gray")
+        ax[0].set_title("Input")
+        ax[0].set_xticks([])
+        ax[0].set_yticks([])
+
+        # display the magnitude image
+        ax[1].imshow(magnitude, cmap="gray")
+        ax[1].set_title("Magnitude Spectrum")
+        ax[1].set_xticks([])
+        ax[1].set_yticks([])
+
+        # show our plots
+        plt.show()
+
+    # zero-out the center of the FFT shift (i.e., remove low
+    # frequencies), apply the inverse shift such that the DC
+    # component once again becomes the top-left, and then apply
+    # the inverse FFT
+    fftShift[cY - size:cY + size, cX - size:cX + size] = 0
+    fftShift = np.fft.ifftshift(fftShift)
+    recon = np.fft.ifft2(fftShift)
+
+    # compute the magnitude spectrum of the reconstructed image,
+    # then compute the mean of the magnitude values
+    magnitude = 20 * np.log(np.abs(1 + recon))
+    mean = np.median(magnitude)
+    
+
+    # Print the mean if verbose is TRUE
+    if verbose is True:
+        print(f"Blur score = {mean}")
+
+    # the image will be considered "blurry" if the mean value of the
+    # magnitudes is less than the threshold value
+    return (mean, mean <= thresh, magnitude)
