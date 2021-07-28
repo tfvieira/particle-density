@@ -57,6 +57,144 @@ with open(CONFIG_FILENAME, 'r') as fp:
 split_images(config['INPUT_FILENAME'], 
             os.path.join(config['OUTPUT_PATH'], 'split'))
 
+#%%
+name_list = [os.path.join(config['OUTPUT_PATH'], 'split', 'split_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+images = read_list_of_images(name_list)
+
+
+global n_clicks, mouseX, mouseY, image_1, image_2
+
+ind = 0
+while ind < config['N_IMAGES']:
+
+    image    = images[ind].copy()
+    image_1  = image.copy()
+    image_2  = image.copy()
+    n_clicks = int(0)
+
+    posList = []
+    def draw_circle(event, x, y, flags, param):
+
+        if event == cv2.EVENT_LBUTTONDOWN:
+            print('x = %d, y = %d'%(x, y))
+            posList.append((x, y))
+            cv2.drawMarker(image_1, (x,y), (255,0,0), cv2.MARKER_CROSS, 10, 1)
+            global n_clicks
+            n_clicks = n_clicks + 1
+            mouseX, mouseY = x, y
+
+    cv2.namedWindow('image_1', cv2.WINDOW_KEEPRATIO)
+    # cv2.setWindowProperty('image_1', cv2.WINDOW_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    # cv2.namedWindow('image_2', cv2.WINDOW_KEEPRATIO)
+    cv2.setMouseCallback('image_1', draw_circle)
+
+    # histogram = draw_histogram(image)
+
+    while(True):
+
+        cv2.imshow('image_1'  , image_1)
+        # cv2.imshow('image_2'  , image_2)
+        # cv2.imshow('histogram', histogram)
+
+        key = 0xFF & cv2.waitKey(20)
+
+        if key == ord('n'):
+            ind = ind + 1
+            break
+
+        elif key == ord('q'):
+            
+            cv2.destroyAllWindows()
+            break
+
+        elif n_clicks == 5:
+
+            posNp = np.array(posList)
+            ellipse = fit_ellipses([posNp])
+            image_2 = draw_ellipses(image_1, ellipse)
+
+            # init_level_set = np.zeros(image.shape, dtype=np.int8)
+            # init_level_set = draw_ellipses(image_2, ellipse)
+
+            filename = os.path.join(config['OUTPUT_PATH'], 'ellipse', 'ellipse_' + str(ind) + '.json')
+            write_json(ellipse[0], filename)
+                    
+
+            # image = 1.0 - normalize_image(image)
+            # evolution = compute_snakes(image, threshold=config["SNAKES_THRESH"], n_iter=config["SNAKES_N_ITER"])
+            # evolution = np.array(evolution)
+
+
+            # #     # Plot intermediate SNAKES iterations
+            # fig = plt.figure(figsize=(10,5))
+            # plt.imshow(image, cmap="gray")
+            # iterations = np.linspace(0, config["SNAKES_N_ITER"], config["SNAKES_N_CONTOURS"]).astype(int)
+            # # colors = ['k', 'y', 'g', 'c', 'm', 'r']
+            # plt.imshow(evolution[-1], cmap='gray')
+            # title = "Morphological GAC evolution"
+            # # ax.contour(evolution[-1], [0.5], colors='r')
+            # # ax.legend(bbox_to_anchor=(1.04,0.7), loc="upper left")
+            # fig.tight_layout()
+            # plt.gca().set_aspect('equal')
+            # plt.gca().set_axis_off()
+            # # plt.show()
+        
+    cv2.destroyAllWindows()
+
+
+# %%===========================================================================
+name_list  = [os.path.join(config['OUTPUT_PATH'], 'ellipse', 'ellipse_' + str(x) + '.json') for x in range(config['N_IMAGES'])]
+image_list = [os.path.join(config['OUTPUT_PATH'], 'split', 'split_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+filenames  = [os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+
+for i in range(config['N_IMAGES']):
+
+    json_file       = name_list[i]
+    image_file      = image_list[i]
+    output_filename = filenames[i]
+
+    ellipse = read_json(json_file)
+    x, y = ellipse[0][:]
+    w, h = config['CROP_RECTANGLE'][2:]
+
+    x0 = int(x - w/2)
+    xf = int(x + w/2)
+    y0 = int(y - w/2)
+    yf = int(y + w/2)
+
+    image         = cv2.imread(image_file)
+    cropped_image = image[y0:yf, x0:xf]
+
+    # Show results
+    cv2.namedWindow('image'        , cv2.WINDOW_KEEPRATIO)
+    cv2.namedWindow('cropped_image', cv2.WINDOW_KEEPRATIO)
+
+    cv2.imshow('image', image)
+    cv2.imshow('cropped_image', cropped_image)
+
+    cv2.waitKey(2000)
+    cv2.destroyAllWindows()
+
+    cv2.imwrite(output_filename, cropped_image)
+
+#%%
+filenames  = [os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+images = read_list_of_images(filenames)
+show_list_of_images(images)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %%===========================================================================
 # Crop the images to contain only the particles
 crop_images(config['INPUT_FILENAME'], 
@@ -95,7 +233,7 @@ write_list_of_images(filenames, images)
 
 # %%===========================================================================
 # # Show list of pre-processed images
-filenames = [os.path.join(config['OUTPUT_PATH'], 'blur', 'blur_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
+filenames = [os.path.join(config['OUTPUT_PATH'], 'crop', 'crop_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
 images = read_list_of_images(filenames)
 show_list_of_images(images)
 

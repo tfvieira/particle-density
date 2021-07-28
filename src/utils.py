@@ -103,6 +103,27 @@ def compute_histogram_1C(src):
     return histImage
 
 
+def draw_histogram(src):
+    # Compute the histograms:
+    b_hist = cv2.calcHist([src], [0], None, [256], [0, 256], True, False)
+
+    # Draw the histograms for B, G and R
+    hist_w = 512
+    hist_h = 400
+    bin_w = np.round(hist_w / 256)
+
+    dst = np.ones((hist_h, hist_w), np.uint8)
+
+    # Normalize the result to [ 0, histImage.rows ]
+    cv2.normalize(b_hist, b_hist, 0, dst.shape[0], cv2.NORM_MINMAX)
+
+    # Draw for each channel
+    for i in range(1, 256):
+        cv2.line(dst, (int(bin_w * (i - 1)), int(hist_h - np.round(b_hist[i - 1]))),
+                 (int(bin_w * i), int(hist_h - np.round(b_hist[i]))), 255, 2, cv2.LINE_8, 0)
+    return dst
+
+
 
 def split_images(input_filename, output_path, output_name="split", verbose=True):
 
@@ -272,6 +293,17 @@ def find_contours_and_draw_ellipses(binary_image):
     return draw_ellipses(binary_image, fit_ellipses(contours))
 
 
+def return_image_statistics(image, mask_shape = (3,3)):
+
+    if image.dtype != 'float':
+        image = image.astype('float')
+
+    mu    = cv2.blur(image      , mask_shape)
+    mu2   = cv2.blur(image*image, mask_shape)
+    sigma = np.sqrt(np.abs(mu2 - mu * mu))
+
+    return mu, sigma
+
 
 def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size = 20, thresh=0, circles=None):
     
@@ -308,7 +340,6 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
         # Process image
         ref  = images[max(ind-1, 0)].copy()
         gray = images[ind].copy()
-        diff = cv2.absdiff(ref, gray)
         
         blur = cv2.medianBlur(gray, med_blur_size)
         gx   = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=ksize)
@@ -316,7 +347,11 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
         g    = cv2.magnitude(gx, gy)
         g    = (255*normalize_image(g)).astype(np.uint8)
 
-
+        diff = cv2.absdiff(ref, blur)
+        
+        mu, sigma = return_image_statistics(blur, mask_shape=(5,5))
+        mu        = normalize_image(1 - normalize_image(mu))
+        sigma     = normalize_image(sigma)
 
         n = gray.size
         gray_norm = gray / (np.sqrt( (1/n)  *  np.sum(gray ** 2)))
@@ -350,8 +385,9 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
         # gauss_3 = gauss - gauss_2
 
         # fft_shift = fft_shift * (gauss - gauss_2)
-        fft_shift = fft_shift * gauss
-        spectrum_sum = fft_shift.ravel().sum()
+        # fft_shift = fft_shift * gauss
+        fft_shift =  fft_shift[fft_shift > fft_shift.shape[0]/1000]
+        spectrum_sum = fft_shift.sum()
         
         
 
@@ -359,7 +395,7 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
         fft_shift = (255 * normalize_image(fft_shift)).astype(np.uint8)
         fft_hist  = compute_histogram_1C(fft_shift)
         
-        print(f'spectrum_sum = {spectrum_sum}')
+        print(f'spectrum_sum = {spectrum_sum:.4e}')
 
 
 
@@ -367,13 +403,15 @@ def show_list_of_images(images, ind = 0, med_blur_size=27, ksize=31, gauss_size 
 
         # blur, _, mag = detect_blur_fft(diff, size=0, verbose=True)
         # spectrum_sum, total_sum, fft_shift, fft_hist = compute_blur(gray, gaussian_sigma = gauss_size, annotate_on_image = True)
-        print(f'Spectrum sum: {spectrum_sum}')#\t\t total_sum: {total_sum}')
+        # print(f'Spectrum sum: {spectrum_sum}')#\t\t total_sum: {total_sum}')
 
         val, im_b = cv2.threshold(g, 0, 255, cv2.THRESH_OTSU)
 
         cv2.imshow("gray"      ,        gray)
-        cv2.imshow("gray_norm"      ,        normalize_image(gray_norm))
+        cv2.imshow("gray_norm" ,        normalize_image(gray_norm))
         cv2.imshow("blur"      ,        blur)
+        cv2.imshow("mu"        ,        mu)
+        cv2.imshow("sigma"     ,        sigma)
         cv2.imshow("fft_shift" ,   normalize_image(fft_shift))
         cv2.imshow("fft_hist"  ,    fft_hist)
         cv2.imshow("diff"      ,        diff)
@@ -636,11 +674,13 @@ def store_evolution_in(lst):
 # _, output = cv2.imreadmulti("../results/pre_processed.tif", [], cv2.IMREAD_GRAYSCALE)
 
 
-def compute_snakes(image, threshold=0.83, n_iter=400, verbose=True):
+def compute_snakes(image, threshold=0.83, n_iter=400, verbose=True, init_level_set = []):
     
     # Initial level set
-    init_level_set = np.zeros(image.shape, dtype=np.int8)
-    init_level_set[10:-10, 10:-10] = 1
+    if init_level_set == []:
+        init_level_set = np.zeros(image.shape, dtype=np.int8)
+        init_level_set[10:-10, 10:-10] = 1
+
     # List with intermediate results for plotting the evolution
     evolution = []
     callback = store_evolution_in(evolution)
