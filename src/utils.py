@@ -9,9 +9,10 @@ Created on Wed Apr 21 21:01:52 2021
 import os
 import cv2
 import json
-import pandas as pd
 import numpy as np
 import scipy.stats
+import pandas as pd
+import tensorflow as tf
 import matplotlib.pyplot as plt
 from skimage import data, img_as_float
 from sklearn import preprocessing
@@ -23,7 +24,43 @@ from skimage.segmentation import (morphological_chan_vese,
                                   inverse_gaussian_gradient,
                                   checkerboard_level_set)
 
+
+layers = tf.keras.layers
+
+
+plt.style.use('seaborn')
+plt.rcParams['figure.dpi'] = 300
+plt.rcParams['savefig.dpi'] = 300
 plt.rcParams.update({'figure.max_open_warning': 0})
+
+# Define IO parameters
+CONFIG_PATH = 'config'
+
+EXPERIMENTS = [
+    '10-microns particles-60X',
+    'Isolada 3--3',
+    'Isolada 3--2',
+    'Isolada-2-10 um',
+    'Calibration2_Single Cell',
+    'Calibration1_Single Cell',
+    'Four-mixing particles together',
+    'Several 10-micron-particles together',
+    'Calibration 10-microns',
+    '30 microns-beads-60X-measuring 2',
+    'Calibration-1-4 Cells',
+    '3 particles_10 um',
+]
+
+# for EXPERIMENT in EXPERIMENTS:
+EXPERIMENT = EXPERIMENTS[0]
+
+# Read configuration parameters from JSON file
+CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
+with open(CONFIG_FILENAME, 'r') as fp:
+    config = json.load(fp)
+
+
+
 
 #%%
 def read_json(json_filename):
@@ -772,3 +809,71 @@ def detect_blur_fft(image, size=0, thresh=10, plot_results=False, verbose=False)
     # the image will be considered "blurry" if the mean value of the
     # magnitudes is less than the threshold value
     return (mean, mean <= thresh, magnitude)
+
+#%%
+def fit(
+    function, O, y, 
+    max_epoch = 100, 
+    lossFnc = tf.keras.losses.mean_squared_error,
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.5)
+    ):
+
+    i = 0
+    losses = []
+    for epoch in range(max_epoch):
+
+        with tf.GradientTape(persistent=True) as tape:
+
+            tape.watch(O)
+
+            yHat = function(O)
+          
+            loss = tf.reduce_mean(lossFnc(y, yHat)) 
+
+        grads = tape.gradient(loss, O)
+        optimizer.apply_gradients(zip(grads, O))
+
+        if i%100 == 0:
+            print('batch : %d of %d (loss = %.4f)'%(i, max_epoch, loss))
+        
+        losses.append(loss.numpy())
+
+        i = i + 1
+    
+    return losses
+
+
+
+
+def gaussian(O, n = 100):
+    
+    u1, u2, sig21, sig22, p = tuple(O)
+    
+    X = np.linspace(-1,1,n)
+    
+    g1 = p*tf.exp(-0.5*(X-u1)**2/sig21)
+    g2 = (1-p)*tf.exp(-0.5*(X-u2)**2/sig22)
+    
+    return g1+g2
+
+
+
+def gaussian2D(O, N = 32):
+
+    u1, u2, S11, S12, S22 = tuple(O)
+    
+    I = [[0 for x in range(N)] for y in range(N)]
+    
+    for i in range(N):
+        for j in range(N):
+            x = tf.constant(-1.0+2.0*i/N)
+            y = tf.constant(-1.0+2.0*j/N)
+            tmp1 = ((x-u1)**2)*S11
+            tmp2 = ((x-u1)*(y-u2))*S12
+            tmp3 = ((y-u2)**2)*S22
+
+            I[i][j] = tf.exp(-0.5*(tmp1+tmp2+tmp3) )
+    
+            
+    return I
+
