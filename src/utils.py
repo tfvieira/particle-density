@@ -13,7 +13,11 @@ import numpy as np
 import scipy.stats
 import pandas as pd
 import tensorflow as tf
+
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator
+
 from skimage import data, img_as_float
 from sklearn import preprocessing
 from scipy.optimize import curve_fit
@@ -858,6 +862,26 @@ def gaussian(O, n = 100):
 
 
 
+# def gaussian2D(O, N = 32):
+
+#     u1, u2, S11, S12, S22 = tuple(O)
+    
+#     I = [[0 for x in range(N)] for y in range(N)]
+    
+#     for i in range(N):
+#         for j in range(N):
+#             x = tf.constant(-1.0+2.0*i/N)
+#             y = tf.constant(-1.0+2.0*j/N)
+#             tmp1 = ((x-u1)**2)*S11
+#             tmp2 = ((x-u1)*(y-u2))*S12
+#             tmp3 = ((y-u2)**2)*S22
+
+#             I[i][j] = tf.exp(-0.5*(tmp1+tmp2+tmp3) )
+    
+            
+#     return I
+
+
 def gaussian2D(O, N = 32):
 
     u1, u2, S11, S12, S22 = tuple(O)
@@ -869,11 +893,10 @@ def gaussian2D(O, N = 32):
             x = tf.constant(-1.0+2.0*i/N)
             y = tf.constant(-1.0+2.0*j/N)
             tmp1 = ((x-u1)**2)*S11
-            tmp2 = ((x-u1)*(y-u2))*S12
-            tmp3 = ((y-u2)**2)*S22
+            tmp2 = 0
+            tmp3 = ((y-u2)**2)*S11
 
             I[i][j] = tf.exp(-0.5*(tmp1+tmp2+tmp3) )
     
             
     return I
-
