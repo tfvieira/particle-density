@@ -14,6 +14,8 @@ import scipy.stats
 import pandas as pd
 import tensorflow as tf
 
+import argparse
+
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator
@@ -817,29 +819,37 @@ def detect_blur_fft(image, size=0, thresh=10, plot_results=False, verbose=False)
 #%%
 def fit(
     function, O, y, 
-    max_epoch = 100, 
+    max_epoch = 200, 
     lossFnc = tf.keras.losses.mean_squared_error,
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.5)
+    optimizer = tf.keras.optimizers.SGD(learning_rate = 10) #
     ):
 
     i = 0
     losses = []
+
+    # eta = 1.0
     for epoch in range(max_epoch):
 
         with tf.GradientTape(persistent=True) as tape:
 
             tape.watch(O)
 
-            yHat = function(O)
+            yHat = function(O[0])
           
             loss = tf.reduce_mean(lossFnc(y, yHat)) 
 
-        grads = tape.gradient(loss, O)
+        grads = tape.gradient(loss, O)#, unconnected_gradients=tf.UnconnectedGradients.ZERO)
         optimizer.apply_gradients(zip(grads, O))
 
         if i%100 == 0:
+            print([x.numpy() for x in O])
+            print([x.numpy() for x in grads])
             print('batch : %d of %d (loss = %.4f)'%(i, max_epoch, loss))
         
+        # if i%1000 == 0:
+        #     eta = eta * 2
+        #     optimizer = tf.keras.optimizers.SGD(learning_rate = eta)
+
         losses.append(loss.numpy())
 
         i = i + 1
@@ -882,21 +892,131 @@ def gaussian(O, n = 100):
 #     return I
 
 
+# def gaussian2D(O, N = 32):
+
+#     # u1, u2, S11, S12, S22 = tuple(O)
+#     u1, u2, S11 = tuple(O)
+    
+#     I = [[0 for x in range(N)] for y in range(N)]
+    
+#     for i in range(N):
+#         for j in range(N):
+#             x = tf.constant(-1.0+2.0*i/N)
+#             y = tf.constant(-1.0+2.0*j/N)
+#             tmp1 = ((x-u1)**2)*S11
+#             tmp2 = 0
+#             tmp3 = ((y-u2)**2)*S11
+
+#             I[i][j] = tf.exp(-0.5*(tmp1+tmp2+tmp3) )
+    
+#     return I
+
+# def donut(O, N = 32):
+
+#     p1, S1, p2, S2 = tuple(O)
+    
+
+#     x = tf.linspace(-1,1,32)
+#     y = tf.linspace(-1,1,32)
+#     X, Y = tf.meshgrid(x, y)
+
+#     # I = p1 * tf.exp(-0.5*(((X-u1_1)**2)*S1 + ((Y-u1_2)**2)*S1)) - p2 * tf.exp(-0.5*(((X-u2_1)**2)*S2 + ((Y-u2_2)**2)*S2))
+#     I = p1 * tf.exp(-0.5*(((X)**2)*S1 + ((Y)**2)*S1)) - p2 * tf.exp(-0.5*(((X)**2)*S2 + ((Y)**2)*S2))
+    
+#     return I
+
+def donut(O, N = 32):
+
+    p1 = O
+    
+    S1    = tf.Variable(14.752665059309788, dtype=tf.float64)
+    p2    = tf.Variable(-0.09849094290483405, dtype=tf.float64)
+    S2    = tf.Variable(-0.7729448324656336, dtype=tf.float64)  
+
+    x = tf.linspace(-1,1,32)
+    y = tf.linspace(-1,1,32)
+    X, Y = tf.meshgrid(x, y)
+
+    # I = p1 * tf.exp(-0.5*(((X-u1_1)**2)*S1 + ((Y-u1_2)**2)*S1)) - p2 * tf.exp(-0.5*(((X-u2_1)**2)*S2 + ((Y-u2_2)**2)*S2))
+    I = p1 * tf.exp(-0.5*(((X)**2)*S1 + ((Y)**2)*S1)) - p2 * tf.exp(-0.5*(((X)**2)*S2 + ((Y)**2)*S2))
+    
+    return I
+
+
 def gaussian2D(O, N = 32):
 
-    u1, u2, S11, S12, S22 = tuple(O)
-    
-    I = [[0 for x in range(N)] for y in range(N)]
-    
-    for i in range(N):
-        for j in range(N):
-            x = tf.constant(-1.0+2.0*i/N)
-            y = tf.constant(-1.0+2.0*j/N)
-            tmp1 = ((x-u1)**2)*S11
-            tmp2 = 0
-            tmp3 = ((y-u2)**2)*S11
+    u1, u2, S, p = tuple(O)
 
-            I[i][j] = tf.exp(-0.5*(tmp1+tmp2+tmp3) )
+    x = tf.linspace(-1,1,32)
+    y = tf.linspace(-1,1,32)
+    X, Y = tf.meshgrid(x, y)
+
+    I = p * tf.exp(-0.5*(((X-u1)**2)*S + ((Y-u2)**2)*S))
     
-            
     return I
+
+# def gaussian2D(O, N = 32):
+
+#     u1, u2, radius = tuple(O)
+
+#     I = [[0 for x in range(N)] for y in range(N)]
+    
+#     for i in range(N):
+#         for j in range(N):
+#             x = tf.constant(-1.0+2.0*i/N)
+#             y = tf.constant(-1.0+2.0*j/N)
+#             tmp1 = ((x-u1)**2)*radius
+#             # tmp2 = 0
+#             tmp3 = ((y-u2)**2)*radius
+
+#             I[i][j] = tf.exp(-0.5*(tmp1+tmp3) )
+    
+#     return I
+
+def fit_gaussian_on_image (img):
+
+    bg = (img[0,0] + img[-1,-1] + img[-1,0] + img[0,-1]) / 4.0
+
+    img = img - bg
+    img = img / np.sqrt(np.mean(img**2))
+
+    u1_1  = tf.Variable(0.0, dtype=tf.float64)
+    u1_2  = tf.Variable(0.0, dtype=tf.float64)
+    S1    = tf.Variable(1.0, dtype=tf.float64)
+    p1    = tf.Variable(1.0, dtype=tf.float64)
+
+    O = [u1_1, u1_2, S1, p1]
+
+    losses = fit(gaussian2D, O, img, max_epoch=400)
+
+    return (O, losses)
+
+
+def fit_donut_on_image (img):
+
+    bg = (img[0,0] + img[-1,-1] + img[-1,0] + img[0,-1]) / 4.0
+
+    img = img - bg
+    img = img / np.sqrt(np.mean(img**2))
+
+    # u1_1  = tf.Variable(0.0, dtype=tf.float64)
+    # u1_2  = tf.Variable(0.0, dtype=tf.float64)
+    p1    = tf.Variable(3.40689306720764, dtype=tf.float64)
+    S1    = tf.Variable(14.752665059309788, dtype=tf.float64)
+
+    # u2_1  = tf.Variable(0.0, dtype=tf.float64)
+    # u2_2  = tf.Variable(0.0, dtype=tf.float64)
+    p2    = tf.Variable(-0.09849094290483405, dtype=tf.float64)
+    S2    = tf.Variable(-0.7729448324656336, dtype=tf.float64)    
+
+    # O = [u1_1, u1_2, S1, p1, u2_1, u2_2, S2, p2]
+    # O = [p1, S1, p2, S2]
+    O = p1
+
+    losses = fit(donut, [O], img, max_epoch=20000)
+
+    return (O, losses)
+
+
+
+
