@@ -6,13 +6,14 @@ Created on Wed Apr 21 21:01:52 2021
 """
 
 #%% Import packages
-import os
+from filetools import *
+
 import cv2
-import json
 import numpy as np
 import scipy.stats
 import pandas as pd
 import tensorflow as tf
+import datetime
 
 import argparse
 
@@ -30,6 +31,10 @@ from skimage.segmentation import (morphological_chan_vese,
                                   inverse_gaussian_gradient,
                                   checkerboard_level_set)
 
+#%%
+log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
 
 layers = tf.keras.layers
 
@@ -39,51 +44,7 @@ plt.rcParams['figure.dpi'] = 300
 plt.rcParams['savefig.dpi'] = 300
 plt.rcParams.update({'figure.max_open_warning': 0})
 
-# Define IO parameters
-CONFIG_PATH = 'config'
-
-EXPERIMENTS = [
-    '10-microns particles-60X',
-    'Isolada 3--3',
-    'Isolada 3--2',
-    'Isolada-2-10 um',
-    'Calibration2_Single Cell',
-    'Calibration1_Single Cell',
-    'Four-mixing particles together',
-    'Several 10-micron-particles together',
-    'Calibration 10-microns',
-    '30 microns-beads-60X-measuring 2',
-    'Calibration-1-4 Cells',
-    '3 particles_10 um',
-]
-
-# for EXPERIMENT in EXPERIMENTS:
-EXPERIMENT = EXPERIMENTS[0]
-
-# Read configuration parameters from JSON file
-CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
-with open(CONFIG_FILENAME, 'r') as fp:
-    config = json.load(fp)
-
-
-
-
 #%%
-def read_json(json_filename):
-
-    with open(json_filename, 'r') as fp:
-        x = json.load(fp)
-    
-    return x
-
-def write_json (x, json_filename, sort_keys=True, indent=4):
-    
-    with open(json_filename, 'w') as fp:
-        json.dump(x, fp, sort_keys=sort_keys, indent=indent)
-    
-    return None
-
-
 def create_2D_gaussian(
     shape = (100, 100), 
     mx = 50, 
@@ -208,19 +169,7 @@ def normalize_image(image):
 def do_nothing(x):
     pass
 
-def read_list_of_images(filenames):
-    """
-    Read a list of image files specified in list FILENAMES.
-    """
-    
-    images = []
-    
-    for filename in filenames:
-        print(f"Reading image {filename}")
-        image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-        images.append(image)
-    
-    return images
+
 
 def find_external_contours(binary_image):
 
@@ -816,206 +765,6 @@ def detect_blur_fft(image, size=0, thresh=10, plot_results=False, verbose=False)
     # magnitudes is less than the threshold value
     return (mean, mean <= thresh, magnitude)
 
-#%%
-def fit(
-    function, O, y, 
-    max_epoch = 200, 
-    lossFnc = tf.keras.losses.mean_squared_error,
-    optimizer = tf.keras.optimizers.SGD(learning_rate = 10) #
-    ):
-
-    i = 0
-    losses = []
-
-    # eta = 1.0
-    for epoch in range(max_epoch):
-
-        with tf.GradientTape(persistent=True) as tape:
-
-            tape.watch(O)
-
-            yHat = function(O[0])
-          
-            loss = tf.reduce_mean(lossFnc(y, yHat)) 
-
-        grads = tape.gradient(loss, O)#, unconnected_gradients=tf.UnconnectedGradients.ZERO)
-        optimizer.apply_gradients(zip(grads, O))
-
-        if i%100 == 0:
-            print([x.numpy() for x in O])
-            print([x.numpy() for x in grads])
-            print('batch : %d of %d (loss = %.4f)'%(i, max_epoch, loss))
-        
-        # if i%1000 == 0:
-        #     eta = eta * 2
-        #     optimizer = tf.keras.optimizers.SGD(learning_rate = eta)
-
-        losses.append(loss.numpy())
-
-        i = i + 1
-    
-    return losses
-
-
-
-
-def gaussian(O, n = 100):
-    
-    u1, u2, sig21, sig22, p = tuple(O)
-    
-    X = np.linspace(-1,1,n)
-    
-    g1 = p*tf.exp(-0.5*(X-u1)**2/sig21)
-    g2 = (1-p)*tf.exp(-0.5*(X-u2)**2/sig22)
-    
-    return g1+g2
-
-
-
-# def gaussian2D(O, N = 32):
-
-#     u1, u2, S11, S12, S22 = tuple(O)
-    
-#     I = [[0 for x in range(N)] for y in range(N)]
-    
-#     for i in range(N):
-#         for j in range(N):
-#             x = tf.constant(-1.0+2.0*i/N)
-#             y = tf.constant(-1.0+2.0*j/N)
-#             tmp1 = ((x-u1)**2)*S11
-#             tmp2 = ((x-u1)*(y-u2))*S12
-#             tmp3 = ((y-u2)**2)*S22
-
-#             I[i][j] = tf.exp(-0.5*(tmp1+tmp2+tmp3) )
-    
-            
-#     return I
-
-
-# def gaussian2D(O, N = 32):
-
-#     # u1, u2, S11, S12, S22 = tuple(O)
-#     u1, u2, S11 = tuple(O)
-    
-#     I = [[0 for x in range(N)] for y in range(N)]
-    
-#     for i in range(N):
-#         for j in range(N):
-#             x = tf.constant(-1.0+2.0*i/N)
-#             y = tf.constant(-1.0+2.0*j/N)
-#             tmp1 = ((x-u1)**2)*S11
-#             tmp2 = 0
-#             tmp3 = ((y-u2)**2)*S11
-
-#             I[i][j] = tf.exp(-0.5*(tmp1+tmp2+tmp3) )
-    
-#     return I
-
-# def donut(O, N = 32):
-
-#     p1, S1, p2, S2 = tuple(O)
-    
-
-#     x = tf.linspace(-1,1,32)
-#     y = tf.linspace(-1,1,32)
-#     X, Y = tf.meshgrid(x, y)
-
-#     # I = p1 * tf.exp(-0.5*(((X-u1_1)**2)*S1 + ((Y-u1_2)**2)*S1)) - p2 * tf.exp(-0.5*(((X-u2_1)**2)*S2 + ((Y-u2_2)**2)*S2))
-#     I = p1 * tf.exp(-0.5*(((X)**2)*S1 + ((Y)**2)*S1)) - p2 * tf.exp(-0.5*(((X)**2)*S2 + ((Y)**2)*S2))
-    
-#     return I
-
-def donut(O, N = 32):
-
-    p1 = O
-    
-    S1    = tf.Variable(14.752665059309788, dtype=tf.float64)
-    p2    = tf.Variable(-0.09849094290483405, dtype=tf.float64)
-    S2    = tf.Variable(-0.7729448324656336, dtype=tf.float64)  
-
-    x = tf.linspace(-1,1,32)
-    y = tf.linspace(-1,1,32)
-    X, Y = tf.meshgrid(x, y)
-
-    # I = p1 * tf.exp(-0.5*(((X-u1_1)**2)*S1 + ((Y-u1_2)**2)*S1)) - p2 * tf.exp(-0.5*(((X-u2_1)**2)*S2 + ((Y-u2_2)**2)*S2))
-    I = p1 * tf.exp(-0.5*(((X)**2)*S1 + ((Y)**2)*S1)) - p2 * tf.exp(-0.5*(((X)**2)*S2 + ((Y)**2)*S2))
-    
-    return I
-
-
-def gaussian2D(O, N = 32):
-
-    u1, u2, S, p = tuple(O)
-
-    x = tf.linspace(-1,1,32)
-    y = tf.linspace(-1,1,32)
-    X, Y = tf.meshgrid(x, y)
-
-    I = p * tf.exp(-0.5*(((X-u1)**2)*S + ((Y-u2)**2)*S))
-    
-    return I
-
-# def gaussian2D(O, N = 32):
-
-#     u1, u2, radius = tuple(O)
-
-#     I = [[0 for x in range(N)] for y in range(N)]
-    
-#     for i in range(N):
-#         for j in range(N):
-#             x = tf.constant(-1.0+2.0*i/N)
-#             y = tf.constant(-1.0+2.0*j/N)
-#             tmp1 = ((x-u1)**2)*radius
-#             # tmp2 = 0
-#             tmp3 = ((y-u2)**2)*radius
-
-#             I[i][j] = tf.exp(-0.5*(tmp1+tmp3) )
-    
-#     return I
-
-def fit_gaussian_on_image (img):
-
-    bg = (img[0,0] + img[-1,-1] + img[-1,0] + img[0,-1]) / 4.0
-
-    img = img - bg
-    img = img / np.sqrt(np.mean(img**2))
-
-    u1_1  = tf.Variable(0.0, dtype=tf.float64)
-    u1_2  = tf.Variable(0.0, dtype=tf.float64)
-    S1    = tf.Variable(1.0, dtype=tf.float64)
-    p1    = tf.Variable(1.0, dtype=tf.float64)
-
-    O = [u1_1, u1_2, S1, p1]
-
-    losses = fit(gaussian2D, O, img, max_epoch=400)
-
-    return (O, losses)
-
-
-def fit_donut_on_image (img):
-
-    bg = (img[0,0] + img[-1,-1] + img[-1,0] + img[0,-1]) / 4.0
-
-    img = img - bg
-    img = img / np.sqrt(np.mean(img**2))
-
-    # u1_1  = tf.Variable(0.0, dtype=tf.float64)
-    # u1_2  = tf.Variable(0.0, dtype=tf.float64)
-    p1    = tf.Variable(3.40689306720764, dtype=tf.float64)
-    S1    = tf.Variable(14.752665059309788, dtype=tf.float64)
-
-    # u2_1  = tf.Variable(0.0, dtype=tf.float64)
-    # u2_2  = tf.Variable(0.0, dtype=tf.float64)
-    p2    = tf.Variable(-0.09849094290483405, dtype=tf.float64)
-    S2    = tf.Variable(-0.7729448324656336, dtype=tf.float64)    
-
-    # O = [u1_1, u1_2, S1, p1, u2_1, u2_2, S2, p2]
-    # O = [p1, S1, p2, S2]
-    O = p1
-
-    losses = fit(donut, [O], img, max_epoch=20000)
-
-    return (O, losses)
 
 
 
