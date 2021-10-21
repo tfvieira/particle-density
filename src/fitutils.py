@@ -42,7 +42,6 @@ def donut(O, N = 32):
     
     return I
 
-
 def gaussian2D(O, N = 32):
 
     u1, u2, S, p = tuple(O)
@@ -54,7 +53,6 @@ def gaussian2D(O, N = 32):
     I = p * tf.exp(-0.5*(((X-u1)**2)*S + ((Y-u2)**2)*S))
     
     return I
-
 
 def fit_gaussian_on_vector(y, starting_O = [16, 16, 10, 2, 3]):
 
@@ -95,7 +93,6 @@ def fit_gaussian_on_image (img):
 
     return (O, losses)
 
-
 def fit_donut_on_image (img):
 
     u1_1  = tf.Variable(0.0, dtype=tf.float64)
@@ -112,7 +109,6 @@ def fit_donut_on_image (img):
 
     return (O, losses)
 
-
 def domain(start=-1.0, stop=-1.0, shape=NEW_SHAPE):
 
     t    = tf.linspace(-1.0, 1.0, shape[0])
@@ -120,11 +116,11 @@ def domain(start=-1.0, stop=-1.0, shape=NEW_SHAPE):
 
     return x, y
 
-
 def model(O):
     """
 
     """
+    # ux, uy, s2, p = O
 
     # Get required x, y domain and model parameters
     x, y = domain(shape=NEW_SHAPE)
@@ -135,11 +131,10 @@ def model(O):
 
     return z
 
-
 def fit(y):
 
     function      = model
-    max_epoch     = 400
+    max_epoch     = 1000
     loss_function = tf.keras.losses.mean_squared_error
     optimizer     = tf.keras.optimizers.SGD(learning_rate = 2.0)
     callbacks     = [tensorboard_callback]
@@ -153,7 +148,6 @@ def fit(y):
 
     O         = [ux,   uy,   s2,   p,    expo]
     trainable = [True, True, True, True, False]
-
 
     i = 0
     losses = []

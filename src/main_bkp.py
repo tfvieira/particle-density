@@ -144,6 +144,7 @@ while ind < config['N_IMAGES']:
 
 
 # %%===========================================================================
+# Crop and center images
 name_list  = [os.path.join(config['OUTPUT_PATH'], 'ellipse', 'ellipse_' + str(x) + '.json') for x in range(config['N_IMAGES'])]
 image_list = [os.path.join(config['OUTPUT_PATH'], 'split', 'split_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
 filenames  = [os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]
@@ -167,15 +168,16 @@ for i in range(config['N_IMAGES']):
     cropped_image = image[y0:yf, x0:xf]
 
     # Show results
-    cv2.namedWindow('image'        , cv2.WINDOW_KEEPRATIO)
-    cv2.namedWindow('cropped_image', cv2.WINDOW_KEEPRATIO)
+    # cv2.namedWindow('image'        , cv2.WINDOW_KEEPRATIO)
+    # cv2.namedWindow('cropped_image', cv2.WINDOW_KEEPRATIO)
 
-    cv2.imshow('image', image)
-    cv2.imshow('cropped_image', cropped_image)
+    # cv2.imshow('image', image)
+    # cv2.imshow('cropped_image', cropped_image)
 
-    cv2.waitKey(2000)
-    cv2.destroyAllWindows()
+    # cv2.waitKey(2000)
+    # cv2.destroyAllWindows()
 
+    # Save results
     cv2.imwrite(output_filename, cropped_image)
 
 #%%

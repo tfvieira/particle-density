@@ -10,14 +10,15 @@ def resize_normalize_img (img, new_shape=(32,32)):
     return img
 
 
-def subtract_bkg_mean(img, patch_size=5):
+def subtract_bkg_mean(img, patch_size=4):
 
-    ul  = img[0:patch_size,       0:patch_size]
-    bl  = img[-1-patch_size:-1,   0:patch_size]
-    ur  = img[0:patch_size,      -1-patch_size:-1]
-    br  = img[-1-patch_size:-1,  -1-patch_size:-1]
+    ul  = img[:patch_size,    :patch_size]
+    bl  = img[-patch_size:,   :patch_size]
+    ur  = img[:patch_size,   -patch_size:]
+    br  = img[-patch_size:,  -patch_size:]
 
-    bg_avg = np.mean([ul, bl, ur, br])
+    bg_avg = (np.mean(ul) + np.mean(bl) + np.mean(ur) + np.mean(br))/ 4.0
+    # bg_avg = np.mean([ul, bl, ur, br])
 
     return img - bg_avg
 

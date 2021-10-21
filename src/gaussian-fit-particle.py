@@ -47,7 +47,7 @@ diameters = []
 
 
 
-#% Read Image data
+#%% Read Image data
 for IMAGE_INDEX in range(config['N_IMAGES']):
 # IMAGE_INDEX = 9
 
@@ -65,16 +65,16 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
 
     #%
     radius = 1.4 * (2**O[4])*np.sqrt(O[2])
-    diameters.append(2*radius)
-    center = (NEW_SHAPE[0]/2, NEW_SHAPE[1]/2)
+    diameters.append(radius)
+    center = (NEW_SHAPE[0]/2 + O[1], NEW_SHAPE[1]/2 + O[0])
     print(f'Radius: {radius:.6e}.')
     print(f'Center: {center}')
 
     #% Present the image result
     image = draw_circle(image, center, radius, color=(255,0,0), thickness=1)
-    # plt.imshow(image)
-    # plt.grid(False)
-    # plt.show()
+    plt.imshow(image)
+    plt.grid(False)
+    plt.show()
 
     #% Write radius value to CSV file
     csv_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.csv')
@@ -163,3 +163,5 @@ df.to_csv(diameters_filename, header=None, index=None)
 # # # # print(f'\n\nSaved plot:\n{fig_filename}')
 
 # # # # plt.show()
+
+# %%
