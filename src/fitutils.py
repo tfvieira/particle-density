@@ -120,8 +120,6 @@ def model(O):
     """
 
     """
-    # ux, uy, s2, p = O
-
     # Get required x, y domain and model parameters
     x, y = domain(shape=NEW_SHAPE)
 
@@ -131,13 +129,7 @@ def model(O):
 
     return z
 
-def fit(y):
-
-    function      = model
-    max_epoch     = 1000
-    loss_function = tf.keras.losses.mean_squared_error
-    optimizer     = tf.keras.optimizers.SGD(learning_rate = 2.0)
-    callbacks     = [tensorboard_callback]
+def model_params():
 
     # Define parameters
     ux    = tf.Variable(0.0, dtype=tf.float64)
@@ -146,8 +138,21 @@ def fit(y):
     p     = tf.Variable(0.1, dtype=tf.float64)
     expo  = tf.constant(4.0, dtype=tf.float64)
 
-    O         = [ux,   uy,   s2,   p,    expo]
-    trainable = [True, True, True, True, False]
+    O         = [ux,       uy,   s2,    p, expo]
+    trainable = [False, False, True, True, False]
+
+    return O, trainable
+
+def fit(y,
+        function      = model,
+        max_epoch     = 1000,
+        loss_function = tf.keras.losses.mean_squared_error,
+        optimizer     = tf.keras.optimizers.SGD(learning_rate = 2.0),
+        callbacks     = [tensorboard_callback]
+        ):
+
+    # Retrieve initial model parameters
+    O, trainable = model_params()
 
     i = 0
     losses = []

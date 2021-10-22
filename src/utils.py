@@ -229,9 +229,9 @@ def plot_data_and_single_exponential(x_data, y_data, x_curve_fit, y_curve_fit):
         x_data, y_data, 
         marker='.', markersize=10, color='#00b3b3', 
         label='Data',
-        linestyle = '-', linewidth = .5)
+        linestyle = '', linewidth = .5)
 
-    ax.plot(x_curve_fit, y_curve_fit, '-b', label='$a\cdot e^{b x}$')
+    ax.plot(x_data, y_curve_fit, '-b', label='$a\cdot e^{b x}$')
 
     # ax.set_yscale('log')
     # ax.set_ylim(1e-2, 1)
@@ -576,10 +576,10 @@ def normalize_df_min_max(df):
         A pandas dataframe with columns normalized to range [0.0, 1.0]
     
     """
+    min_max_scaler = preprocessing.MinMaxScaler()
 
     x = df.values #returns a numpy array
     columns = df.columns
-    min_max_scaler = preprocessing.MinMaxScaler()
     x_scaled = min_max_scaler.fit_transform(x)
     df_norm = pd.DataFrame(x_scaled)
     df_norm.columns = columns

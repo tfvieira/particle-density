@@ -46,7 +46,8 @@ EXPERIMENTS = [
 ]
 
 # for EXPERIMENT in EXPERIMENTS:
-EXPERIMENT = EXPERIMENTS[0]
+EXPERIMENT_INDEX = 1
+EXPERIMENT = EXPERIMENTS[EXPERIMENT_INDEX]
 
 # Read configuration parameters from JSON file
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
@@ -55,8 +56,8 @@ with open(CONFIG_FILENAME, 'r') as fp:
 
 # %%===========================================================================
 # Split one TIF image into many images, each corresponding to one TIF layer
-split_images(config['INPUT_FILENAME'], 
-            os.path.join(config['OUTPUT_PATH'], 'split'))
+# split_images(config['INPUT_FILENAME'], 
+#             os.path.join(config['OUTPUT_PATH'], 'split'))
 
 #%%
 name_list = [os.path.join(config['OUTPUT_PATH'], 'split', 'split_' + str(x) + '.tif') for x in range(config['N_IMAGES'])]

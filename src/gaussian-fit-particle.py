@@ -41,15 +41,16 @@ with open(CONFIG_FILENAME, 'r') as fp:
 
 
 
-diameters = []
 
 
 
 
 
 #%% Read Image data
+diameters = []
+
 for IMAGE_INDEX in range(config['N_IMAGES']):
-# IMAGE_INDEX = 9
+# IMAGE_INDEX = 10
 
     # Read image
     imfile = os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(IMAGE_INDEX) + '.tif')
@@ -59,7 +60,7 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
     image = preprocess_image(image, new_shape=NEW_SHAPE)
 
     #% Fit model to image
-    O, losses = fit(image)
+    O, losses = fit(image, max_epoch=2000)
     O = [x.numpy() for x in O]
     print(O)
 
@@ -81,20 +82,48 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
     df = pd.DataFrame([radius], columns=['radius'])
     df.to_csv(csv_filename, header=None, index=None)
 
-    
-    
+
+
     im_out_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.tif')
     cv2.imwrite(im_out_filename, image)
-
-
-
-
-
 
 
 diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
 df = pd.DataFrame(diameters, columns=['diameters'])
 df.to_csv(diameters_filename, header=None, index=None)
+
+plt.plot(df, '-ro')
+
+#%%
+import scipy.stats as st
+
+
+scale = np.frompyfunc(lambda x, min, max: (x - min) / (max - min), 3, 1)
+
+y_data = df.values
+y_data = scale(y_data, y_data.min(), y_data.max())
+
+N = len(y_data)
+x_data = np.linspace(0,N-1,N)
+
+x_fit = np.linspace(0, N-1, 200)
+
+maxfev = 1000
+pars, cov = curve_fit(
+    f      = exponential,
+    xdata  = x_data.flatten(),
+    ydata  = y_data.flatten(),
+    p0     = [0, 0], 
+    bounds = (-np.inf, np.inf), 
+    maxfev = maxfev,
+    )
+
+y_fit = exponential(x_fit, pars[0], pars[1])
+
+
+plot_data_and_single_exponential(x_data, y_data, x_fit, y_fit)
+
+#%%
 
 # # # #%% Export results filenames
 # # # json_filename        = '../results/10-microns particles-60X/donut_fit/crop_centered_gaussian_fit_'        + str(ind) +'.json'
@@ -163,5 +192,3 @@ df.to_csv(diameters_filename, header=None, index=None)
 # # # # print(f'\n\nSaved plot:\n{fig_filename}')
 
 # # # # plt.show()
-
-# %%
