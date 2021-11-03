@@ -82,8 +82,7 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
     df = pd.DataFrame([radius], columns=['radius'])
     df.to_csv(csv_filename, header=None, index=None)
 
-
-
+    #% Save image
     im_out_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.tif')
     cv2.imwrite(im_out_filename, image)
 
@@ -94,14 +93,15 @@ df.to_csv(diameters_filename, header=None, index=None)
 
 plt.plot(df, '-ro')
 
-#%%
-import scipy.stats as st
-
+#%% Read diameters and calibrate
+diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
+df = pd.read_csv(diameters_filename, header=None)
+print(df.T)
 
 scale = np.frompyfunc(lambda x, min, max: (x - min) / (max - min), 3, 1)
 
 y_data = df.values
-y_data = scale(y_data, y_data.min(), y_data.max())
+# y_data = scale(y_data, y_data.min(), y_data.max())
 
 N = len(y_data)
 x_data = np.linspace(0,N-1,N)
@@ -120,11 +120,20 @@ pars, cov = curve_fit(
 
 y_fit = exponential(x_fit, pars[0], pars[1])
 
+d = {
+    'score': {
+        'pars' : {'a': pars[0],  'b' : pars[1]},
+        'cov'  : {'a': cov[0,0], 'b' : cov[1,1]},
+        },
+    }
 
-plot_data_and_single_exponential(x_data, y_data, x_fit, y_fit)
+write_json(d, os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.json'))
+
+plot_data_and_single_exponential(x_data + 1, y_data, x_fit + 1, y_fit)
+plt.savefig(os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.pdf'))
+
 
 #%%
-
 # # # #%% Export results filenames
 # # # json_filename        = '../results/10-microns particles-60X/donut_fit/crop_centered_gaussian_fit_'        + str(ind) +'.json'
 # # # losses_filename      = '../results/10-microns particles-60X/donut_fit/crop_centered_gaussian_fit_losses_' + str(ind) +'.csv'

@@ -231,16 +231,17 @@ def plot_data_and_single_exponential(x_data, y_data, x_curve_fit, y_curve_fit):
         label='Data',
         linestyle = '', linewidth = .5)
 
-    ax.plot(x_data, y_curve_fit, '-b', label='$a\cdot e^{b x}$')
+    ax.plot(x_curve_fit, y_curve_fit, '-b', label='$a\cdot e^{b x}$')
 
     # ax.set_yscale('log')
     # ax.set_ylim(1e-2, 1)
     # plt.grid(b = True, which = 'minor')
 
-    plt.ylabel('Blur score')
+    plt.ylabel('Score')
     plt.xlabel('Image index')
+    plt.xticks(x_data)
     plt.legend()
-    plt.show()
+    # plt.show()
 
     return None
 
