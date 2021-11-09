@@ -30,7 +30,7 @@ EXPERIMENTS = [
 ]
 
 # for EXPERIMENT in EXPERIMENTS:
-EXPERIMENT_INDEX = 0
+EXPERIMENT_INDEX = 3
 EXPERIMENT = EXPERIMENTS[EXPERIMENT_INDEX]
 
 # Read configuration parameters from JSON file
@@ -60,7 +60,7 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
     image = preprocess_image(image, new_shape=NEW_SHAPE)
 
     #% Fit model to image
-    O, losses = fit(image, max_epoch=2000)
+    O, losses = fit(image, max_epoch=10000)
     O = [x.numpy() for x in O]
     print(O)
 

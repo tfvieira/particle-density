@@ -2,8 +2,8 @@
     "CROP_RECTANGLE": [
         110,
         90,
-        460,
-        350
+        100,
+        100
     ],
     "GRAD_WSIZE": 31,
     "INPUT_FILENAME": "../dataset/Isolada 3--2/Isolada 3--2.tif",
