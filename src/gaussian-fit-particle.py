@@ -30,21 +30,13 @@ EXPERIMENTS = [
 ]
 
 # for EXPERIMENT in EXPERIMENTS:
-EXPERIMENT_INDEX = 3
+EXPERIMENT_INDEX = 0
 EXPERIMENT = EXPERIMENTS[EXPERIMENT_INDEX]
 
 # Read configuration parameters from JSON file
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
-
-
-
-
-
-
-
-
 
 #%% Read Image data
 diameters = []
