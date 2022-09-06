@@ -1,0 +1,27 @@
+{
+    "CIRCLES_GT": null,
+    "CROP_RECTANGLE": [
+        1000,
+        600,
+        500,
+        500
+    ],
+    "GRAD_WSIZE": 31,
+    "INPUT_FILENAME": "../dataset/10-microns particles-60X/10-microns particles-60X.tif",
+    "INPUT_PATH": "../dataset/10-microns particles-60X",
+    "MEDBLUR_WSIZE": 23,
+    "METERS_PER_PIXEL_RATIO": 1.1363636363636364e-07,
+    "N_IMAGES": 20,
+    "OUTPUT_PATH": "../results/10-microns particles-60X",
+    "SNAKES_N_CONTOURS": 6,
+    "SNAKES_N_ITER": 500,
+    "SNAKES_THRESH": 0.83,
+    "SQUARED_METERS_PER_PIXEL_RATIO": 6.456611570247935e-10,
+    "TITLE":"10-microns particles-60X",
+    "BEST_BLURSCORE": 180,
+    "FRAME_NUMBER_VS_TIME": {
+        "FRAME_NUMBER": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 
+        "TIME": [0, 0.332, 0.61, 1.004, 1.189, 1.739, 2.213, 2.477, 2.999, 3.479, 3.692, 3.888]
+    },
+    "GROUND_TRUTHS_AVAILABLE": 1
+}
