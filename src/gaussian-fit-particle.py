@@ -1,9 +1,10 @@
 #%%
 from operator import sub
-from utils import *
-from imtools import *
+
 from filetools import *
 from fitutils import *
+from imtools import *
+from utils import *
 
 #% Parse arguments
 # parser = argparse.ArgumentParser(description='Image file index.')
@@ -33,6 +34,8 @@ EXPERIMENTS = [
 EXPERIMENT_INDEX = 0
 EXPERIMENT = EXPERIMENTS[EXPERIMENT_INDEX]
 
+USE_INITAL_PARAMS = True
+
 # Read configuration parameters from JSON file
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
 with open(CONFIG_FILENAME, 'r') as fp:
@@ -41,8 +44,12 @@ with open(CONFIG_FILENAME, 'r') as fp:
 #%% Read Image data
 diameters = []
 
+s2_problems = []
+
 for IMAGE_INDEX in range(config['N_IMAGES']):
 # IMAGE_INDEX = 10
+
+    print(f'IMAGE {IMAGE_INDEX}')
 
     # Read image
     imfile = os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(IMAGE_INDEX) + '.tif')
@@ -52,77 +59,90 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
     image = preprocess_image(image, new_shape=NEW_SHAPE)
 
     #% Fit model to image
-    O, losses = fit(image, max_epoch=10000)
+    if USE_INITAL_PARAMS:
+        with open(f'genetic_results/image{IMAGE_INDEX}.json', 'r') as fp:
+            initial_data = json.load(fp)
+            initial_params = [initial_data['s2'], initial_data['p']]
+            initial_radius = 1.4 * (2**4)*np.sqrt(abs(initial_params[0]))
+        O, losses = fit(image, max_epoch=1000, initial_params=initial_params)
+    else:
+        O, losses = fit(image, max_epoch=1000)
     O = [x.numpy() for x in O]
     print(O)
 
     #%
-    radius = 1.4 * (2**O[4])*np.sqrt(O[2])
+    radius = 1.4 * (2**O[4])*np.sqrt(abs(O[2]))
     diameters.append(radius)
     center = (NEW_SHAPE[0]/2 + O[1], NEW_SHAPE[1]/2 + O[0])
     print(f'Radius: {radius:.6e}.')
     print(f'Center: {center}')
 
     #% Present the image result
-    image = draw_circle(image, center, radius, color=(255,0,0), thickness=1)
-    plt.imshow(image)
+    image0 = draw_circle(image, center, initial_radius, color=(0,128,0), thickness=1)
+    image1 = draw_circle(image0, center, radius, color=(128,0,0), thickness=1)
+    plt.imshow(image1)
     plt.grid(False)
     plt.show()
+    
+    if O[2] < 0:
+        s2_problems.append(IMAGE_INDEX)
+        
+print(s2_problems)
 
     #% Write radius value to CSV file
-    csv_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.csv')
-    df = pd.DataFrame([radius], columns=['radius'])
-    df.to_csv(csv_filename, header=None, index=None)
+    # csv_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.csv')
+    # df = pd.DataFrame([radius], columns=['radius'])
+    # df.to_csv(csv_filename, header=None, index=None)
 
-    #% Save image
-    im_out_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.tif')
-    cv2.imwrite(im_out_filename, image)
+    # #% Save image
+    # im_out_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.tif')
+    # cv2.imwrite(im_out_filename, image)
 
 
-diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
-df = pd.DataFrame(diameters, columns=['diameters'])
-df.to_csv(diameters_filename, header=None, index=None)
+# diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
+# df = pd.DataFrame(diameters, columns=['diameters'])
+# df.to_csv(diameters_filename, header=None, index=None)
 
-plt.plot(df, '-ro')
+# plt.plot(df, '-ro')
 
-#%% Read diameters and calibrate
-diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
-df = pd.read_csv(diameters_filename, header=None)
-print(df.T)
+# #%% Read diameters and calibrate
+# diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
+# df = pd.read_csv(diameters_filename, header=None)
+# print(df.T)
 
-scale = np.frompyfunc(lambda x, min, max: (x - min) / (max - min), 3, 1)
+# scale = np.frompyfunc(lambda x, min, max: (x - min) / (max - min), 3, 1)
 
-y_data = df.values
-# y_data = scale(y_data, y_data.min(), y_data.max())
+# y_data = df.values
+# # y_data = scale(y_data, y_data.min(), y_data.max())
 
-N = len(y_data)
-x_data = np.linspace(0,N-1,N)
+# N = len(y_data)
+# x_data = np.linspace(0,N-1,N)
 
-x_fit = np.linspace(0, N-1, 200)
+# x_fit = np.linspace(0, N-1, 200)
 
-maxfev = 1000
-pars, cov = curve_fit(
-    f      = exponential,
-    xdata  = x_data.flatten(),
-    ydata  = y_data.flatten(),
-    p0     = [0, 0], 
-    bounds = (-np.inf, np.inf), 
-    maxfev = maxfev,
-    )
+# maxfev = 1000
+# pars, cov = curve_fit(
+#     f      = exponential,
+#     xdata  = x_data.flatten(),
+#     ydata  = y_data.flatten(),
+#     p0     = [0, 0], 
+#     bounds = (-np.inf, np.inf), 
+#     maxfev = maxfev,
+#     )
 
-y_fit = exponential(x_fit, pars[0], pars[1])
+# y_fit = exponential(x_fit, pars[0], pars[1])
 
-d = {
-    'score': {
-        'pars' : {'a': pars[0],  'b' : pars[1]},
-        'cov'  : {'a': cov[0,0], 'b' : cov[1,1]},
-        },
-    }
+# d = {
+#     'score': {
+#         'pars' : {'a': pars[0],  'b' : pars[1]},
+#         'cov'  : {'a': cov[0,0], 'b' : cov[1,1]},
+#         },
+#     }
 
-write_json(d, os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.json'))
+# write_json(d, os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.json'))
 
-plot_data_and_single_exponential(x_data + 1, y_data, x_fit + 1, y_fit)
-plt.savefig(os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.pdf'))
+# plot_data_and_single_exponential(x_data + 1, y_data, x_fit + 1, y_fit)
+# plt.savefig(os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.pdf'))
 
 
 #%%

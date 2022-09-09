@@ -1,97 +1,140 @@
+import json
+import random
+from dataclasses import replace
 from operator import sub
+from time import perf_counter
+
+import numpy as np
 
 from filetools import *
 from fitutils import *
 from imtools import *
 from utils import *
 
-# Define IO parameters
+
+def order_by_fitness(population, fitness):
+    ordered_indexes = np.argsort(fitness) # ascending order
+    fitness = fitness[ordered_indexes]
+    population = population[ordered_indexes]
+    return (population, fitness)
+
+def get_result(image: np.ndarray, s2: float, p: float) -> float:
+    _, losses = fit(image, max_epoch=1000, initial_params=(s2, p))
+    return float(np.mean(losses))
+
+def get_fitness(image: np.ndarray, population: np.ndarray, size: int) -> np.ndarray:
+    fitness = [0]*size
+    for i in range(size):
+        print(f'\nINDIVIDUAL {i}')
+        result = get_result(image, population[i][0], population[i][1])
+        if np.isnan(result):
+            result = 1000
+        print(f'Obtained loss: {result}')
+        fitness[i] = result
+    return np.array(fitness)
+
+def get_parents(population: np.ndarray, fitness: np.ndarray, n: int) -> tuple:
+    population, fitness = order_by_fitness(population, fitness)
+    return (population[1: 1+n].copy(), fitness[1: 1+n].copy())
+
+def crossover(parents: np.ndarray, dims: tuple) -> np.ndarray:
+    children = np.zeros(shape=dims,dtype=float)
+    for i in range(dims[0]):
+        p1, p2 = np.random.choice(parents.shape[0], 2, replace=False)
+        k = random.randint(0,dims[1])
+        children[i][:k] = parents[p1][:k]
+        children[i][k:] = parents[p2][k:]
+    return children
+
+def mutation(children: np.ndarray, tax: float, limits: tuple = (0.01, 1)) -> np.ndarray:
+    m = int(round(children.shape[0]*tax))
+    coord0 = np.random.choice(children.shape[0], m, replace=False)
+    coord1 = np.random.choice(children.shape[1], m, replace=True)
+    
+    for i, j in zip(coord0, coord1):
+        k = np.random.uniform(limits[0],limits[1])
+        children[i][j] = k
+        
+    return children
+
+def new_population(image: np.ndarray, parents: np.ndarray, fitness: np.ndarray, children: np.ndarray, dims: tuple) -> tuple:    
+    new_pop = np.zeros(shape=dims, dtype=float)
+    new_fit = np.zeros(shape=dims[0], dtype=float)
+    
+    new_pop[0] = parents[0]
+    new_fit[0] = fitness[0]
+    
+    new_pop[1] = parents[1]
+    new_fit[1] = fitness[1]
+    
+    children_fit = get_fitness(image, children, children.shape[0])
+    children, children_fit = order_by_fitness(children, children_fit)
+    
+    new_pop[2:] = children[:-2] 
+    new_fit[2:] = children_fit[:-2] 
+    
+    return (new_pop, new_fit)
+
+
 CONFIG_PATH = 'config'
-
 EXPERIMENT = 'genetic_algorithm'
-
-# Read configuration parameters from JSON file
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
 
+low = 0.01
+high = 1
+individuals = 10
+genes = 2
+
+IMAGE_INDEX = 18
+
 diameters = []
 
-for IMAGE_INDEX in range(config['N_IMAGES']):
-# IMAGE_INDEX = 10
+# Read image
+imfile = os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(IMAGE_INDEX) + '.tif')
+image = cv2.imread(imfile, cv2.IMREAD_GRAYSCALE)
 
-    # Read image
-    imfile = os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(IMAGE_INDEX) + '.tif')
-    image  = cv2.imread(imfile, cv2.IMREAD_GRAYSCALE)
+#% Resize and pre-process image
+image = preprocess_image(image, new_shape=NEW_SHAPE)
 
-    #% Resize and pre-process image
-    image = preprocess_image(image, new_shape=NEW_SHAPE)
+populationSize = (individuals,genes)
 
-    #% Fit model to image
-    O, losses = fit(image, max_epoch=1000)
-    O = [x.numpy() for x in O]
-    print(O)
+population = np.random.uniform(low = low, high = high, size = populationSize)
 
-    radius = 1.4 * (2**O[4])*np.sqrt(O[2])
-    diameters.append(radius)
-    center = (NEW_SHAPE[0]/2 + O[1], NEW_SHAPE[1]/2 + O[0])
-    print(f'Radius: {radius:.6e}.')
-    print(f'Center: {center}')
+generations = 10
 
-    image = draw_circle(image, center, radius, color=(255,0,0), thickness=1)
-    plt.imshow(image)
-    plt.grid(False)
-    plt.show()
+fitness = get_fitness(image, population, individuals)
 
-    # csv_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.csv')
-    # df = pd.DataFrame([radius], columns=['radius'])
-    # df.to_csv(csv_filename, header=None, index=None)
+init_time = perf_counter()
+for g in range(generations):
+    print(f'Starting generation {g}')
+    print(f'Parent fitness: {fitness}')
+    n = 3
+    parents, fitness = get_parents(population,fitness,n)
+    children = crossover(parents, populationSize)
+    
+    mutation_tax = 0.3
+    children = mutation(children,mutation_tax)
 
-    # im_out_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.tif')
-    # cv2.imwrite(im_out_filename, image)
+    population, fitness = new_population(image, parents, fitness, children, populationSize)
+    
+    print(f'Generation {g} finished\n')
+    
+print(f'Executed in {int(round( (perf_counter() - init_time)/60 ))} minutes')
+print('Saving results to JSON')
 
+population, fitness = order_by_fitness(population, fitness)
 
-# diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
-# df = pd.DataFrame(diameters, columns=['diameters'])
-# df.to_csv(diameters_filename, header=None, index=None)
-
-# plt.plot(df, '-ro')
-
-# diameters_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'diameters.csv')
-# df = pd.read_csv(diameters_filename, header=None)
-# print(df.T)
-
-# scale = np.frompyfunc(lambda x, min, max: (x - min) / (max - min), 3, 1)
-
-# y_data = df.values
-# y_data = scale(y_data, y_data.min(), y_data.max())
-
-# N = len(y_data)
-# x_data = np.linspace(0,N-1,N)
-
-# x_fit = np.linspace(0, N-1, 200)
-
-# maxfev = 1000
-# pars, cov = curve_fit(
-#     f      = exponential,
-#     xdata  = x_data.flatten(),
-#     ydata  = y_data.flatten(),
-#     p0     = [0, 0], 
-#     bounds = (-np.inf, np.inf), 
-#     maxfev = maxfev,
-#     )
-
-# y_fit = exponential(x_fit, pars[0], pars[1])
-
-# d = {
-#     'score': {
-#         'pars' : {'a': pars[0],  'b' : pars[1]},
-#         'cov'  : {'a': cov[0,0], 'b' : cov[1,1]},
-#         },
-#     }
-
-# write_json(d, os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.json'))
-
-# plot_data_and_single_exponential(x_data + 1, y_data, x_fit + 1, y_fit)
-# plt.savefig(os.path.join(config['OUTPUT_PATH'], 'calibration', 'calibration.pdf'))
-
+with open(f'genetic_results/image{IMAGE_INDEX}.json', 'w') as fp:
+    config = json.dump(
+        {
+            's2': population[0, 0],
+            'p': population[0, 1],
+            'mean_loss': fitness[0]
+        },
+        fp,
+        indent=4
+    )
+    
+print('Finished')

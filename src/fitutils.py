@@ -1,9 +1,9 @@
-import numpy as np
-import cv2
-import tensorflow as tf
-import matplotlib.pyplot as plt
-
 import datetime
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
 
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
@@ -148,11 +148,15 @@ def fit(y,
         max_epoch     = 1000,
         loss_function = tf.keras.losses.mean_squared_error,
         optimizer     = tf.keras.optimizers.SGD(learning_rate = 2.0),
-        callbacks     = [tensorboard_callback]
+        callbacks     = [tensorboard_callback],
+        initial_params = None
         ):
 
     # Retrieve initial model parameters
     O, trainable = model_params()
+    if initial_params is not None:
+        O[2] = tf.Variable(initial_params[0], dtype=tf.float64)
+        O[3] = tf.Variable(initial_params[1], dtype=tf.float64)
 
     i = 0
     losses = []
