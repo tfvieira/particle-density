@@ -5,12 +5,15 @@ from operator import sub
 from time import perf_counter
 
 import numpy as np
+import tensorflow as tf
+from tqdm import tqdm
 
 from filetools import *
 from fitutils import *
 from imtools import *
 from utils import *
 
+DIRECT_RESULT = True
 
 def order_by_fitness(population, fitness):
     ordered_indexes = np.argsort(fitness) # ascending order
@@ -19,23 +22,32 @@ def order_by_fitness(population, fitness):
     return (population, fitness)
 
 def get_result(image: np.ndarray, s2: float, p: float) -> float:
-    _, losses = fit(image, max_epoch=1000, initial_params=(s2, p))
-    return float(np.mean(losses))
+    if DIRECT_RESULT:
+        params, _ = model_params()
+        params[2] = s2
+        params[3] = p
+        y_hat = model(params)
+        loss = tf.reduce_mean(tf.keras.losses.mean_squared_error(image, y_hat))
+        loss = tf.reduce_mean(loss)
+        return loss.numpy()
+    else:
+        _, losses = fit(image, max_epoch=1000, initial_params=(s2, p))
+        return float(np.mean(losses))
 
 def get_fitness(image: np.ndarray, population: np.ndarray, size: int) -> np.ndarray:
     fitness = [0]*size
     for i in range(size):
-        print(f'\nINDIVIDUAL {i}')
+        # print(f'\nINDIVIDUAL {i}')
         result = get_result(image, population[i][0], population[i][1])
         if np.isnan(result):
             result = 1000
-        print(f'Obtained loss: {result}')
+        # print(f'Obtained loss: {result}')
         fitness[i] = result
     return np.array(fitness)
 
 def get_parents(population: np.ndarray, fitness: np.ndarray, n: int) -> tuple:
     population, fitness = order_by_fitness(population, fitness)
-    return (population[1: 1+n].copy(), fitness[1: 1+n].copy())
+    return (population[: n].copy(), fitness[: n].copy())
 
 def crossover(parents: np.ndarray, dims: tuple) -> np.ndarray:
     children = np.zeros(shape=dims,dtype=float)
@@ -61,17 +73,17 @@ def new_population(image: np.ndarray, parents: np.ndarray, fitness: np.ndarray, 
     new_pop = np.zeros(shape=dims, dtype=float)
     new_fit = np.zeros(shape=dims[0], dtype=float)
     
-    new_pop[0] = parents[0]
-    new_fit[0] = fitness[0]
+    proportion = 0.3
+    idx = int(proportion*dims[0])
     
-    new_pop[1] = parents[1]
-    new_fit[1] = fitness[1]
+    new_pop[: idx] = parents[: idx]
+    new_fit[: idx] = fitness[: idx]
     
     children_fit = get_fitness(image, children, children.shape[0])
-    children, children_fit = order_by_fitness(children, children_fit)
+    children, children_fit = order_by_fitness(children, children_fit)    
     
-    new_pop[2:] = children[:-2] 
-    new_fit[2:] = children_fit[:-2] 
+    new_pop[idx:] = children[:-idx] 
+    new_fit[idx:] = children_fit[:-idx] 
     
     return (new_pop, new_fit)
 
@@ -84,57 +96,60 @@ with open(CONFIG_FILENAME, 'r') as fp:
 
 low = 0.01
 high = 1
-individuals = 10
+individuals = 100
 genes = 2
 
-IMAGE_INDEX = 18
+for i in range(3, 20):
+    print(f'Start proccess for image {i}')    
 
-diameters = []
+    IMAGE_INDEX = i
 
-# Read image
-imfile = os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(IMAGE_INDEX) + '.tif')
-image = cv2.imread(imfile, cv2.IMREAD_GRAYSCALE)
+    diameters = []
 
-#% Resize and pre-process image
-image = preprocess_image(image, new_shape=NEW_SHAPE)
+    # Read image
+    imfile = os.path.join(config['OUTPUT_PATH'], 'crop_centered', 'crop_centered_' + str(IMAGE_INDEX) + '.tif')
+    image = cv2.imread(imfile, cv2.IMREAD_GRAYSCALE)
 
-populationSize = (individuals,genes)
+    #% Resize and pre-process image
+    image = preprocess_image(image, new_shape=NEW_SHAPE)
 
-population = np.random.uniform(low = low, high = high, size = populationSize)
+    populationSize = (individuals,genes)
 
-generations = 10
+    population = np.random.uniform(low = low, high = high, size = populationSize)
 
-fitness = get_fitness(image, population, individuals)
+    generations = 1000
 
-init_time = perf_counter()
-for g in range(generations):
-    print(f'Starting generation {g}')
-    print(f'Parent fitness: {fitness}')
-    n = 3
-    parents, fitness = get_parents(population,fitness,n)
-    children = crossover(parents, populationSize)
-    
-    mutation_tax = 0.3
-    children = mutation(children,mutation_tax)
+    fitness = get_fitness(image, population, individuals)
 
-    population, fitness = new_population(image, parents, fitness, children, populationSize)
-    
-    print(f'Generation {g} finished\n')
-    
-print(f'Executed in {int(round( (perf_counter() - init_time)/60 ))} minutes')
-print('Saving results to JSON')
+    init_time = perf_counter()
+    for g in tqdm(range(generations)):
+        # print(f'Starting generation {g}')
+        # print(f'Parent fitness: {fitness}')
+        n = int(0.3*individuals)
+        parents, fitness = get_parents(population,fitness,n)
+        children = crossover(parents, populationSize)
+        
+        mutation_tax = 0.01
+        children = mutation(children,mutation_tax)
 
-population, fitness = order_by_fitness(population, fitness)
+        population, fitness = new_population(image, parents, fitness, children, populationSize)
+        
+        # print(f'Generation {g} finished\n')
+        
+    print(f'Executed in {int(round( (perf_counter() - init_time)/60 ))} minutes')
+    print('Saving results to JSON')
 
-with open(f'genetic_results/image{IMAGE_INDEX}.json', 'w') as fp:
-    config = json.dump(
-        {
-            's2': population[0, 0],
-            'p': population[0, 1],
-            'mean_loss': fitness[0]
-        },
-        fp,
-        indent=4
-    )
+    population, fitness = order_by_fitness(population, fitness)
+
+    with open(f'genetic_direct_results/image{IMAGE_INDEX}.json', 'w') as fp:
+        _ = json.dump(
+            {
+                's2': population[0, 0],
+                'p': population[0, 1],
+                'loss': fitness[0]
+            },
+            fp,
+            indent=4
+        )
     
 print('Finished')

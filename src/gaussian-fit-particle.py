@@ -60,7 +60,7 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
 
     #% Fit model to image
     if USE_INITAL_PARAMS:
-        with open(f'genetic_results/image{IMAGE_INDEX}.json', 'r') as fp:
+        with open(f'genetic_direct_results/image{IMAGE_INDEX}.json', 'r') as fp:
             initial_data = json.load(fp)
             initial_params = [initial_data['s2'], initial_data['p']]
             initial_radius = 1.4 * (2**4)*np.sqrt(abs(initial_params[0]))
@@ -78,10 +78,15 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
     print(f'Center: {center}')
 
     #% Present the image result
-    image0 = draw_circle(image, center, initial_radius, color=(0,128,0), thickness=1)
-    image1 = draw_circle(image0, center, radius, color=(128,0,0), thickness=1)
-    plt.imshow(image1)
-    plt.grid(False)
+    image0 = draw_circle(image, center, initial_radius, color=(0,255,0), thickness=1)
+    image1 = draw_circle(image, center, radius, color=(255,0,0), thickness=1)
+    
+    fig, ax = plt.subplots(1, 2)
+    ax[0].imshow(image0)
+    ax[0].grid(False)
+    ax[1].imshow(image1)
+    ax[1].grid(False)
+    
     plt.show()
     
     if O[2] < 0:
