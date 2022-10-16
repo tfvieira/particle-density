@@ -31,14 +31,14 @@ def plot_donut_1D():
 
 def donut(O, N = 32):
 
-    p1, S1, p2, S2 = O
+    p1, S1, p2, S2, offset = O
 
     x = tf.linspace(-1,1,32)
     y = tf.linspace(-1,1,32)
     X, Y = tf.meshgrid(x, y)
 
     # I = p1 * tf.exp(-0.5*(((X-u1_1)**2)*S1 + ((Y-u1_2)**2)*S1)) - p2 * tf.exp(-0.5*(((X-u2_1)**2)*S2 + ((Y-u2_2)**2)*S2))
-    I = p1 * tf.exp(-0.5*(((X)**2)*S1 + ((Y)**2)*S1)) - p2 * tf.exp(-0.5*(((X)**2)*S2 + ((Y)**2)*S2))
+    I = p1 * tf.exp(-0.5*(((X)**2)*S1 + ((Y)**2)*S1)) - p2 * tf.exp(-0.5*(((X)**2)*S2 + ((Y)**2)*S2)) + offset
     
     return I
 
@@ -178,7 +178,7 @@ def fit(y,
 
         if i%100 == 0:
             print('batch : %d of %d (loss = %.4f)'%(i, max_epoch, loss))
-            losses.append(loss.numpy())
+        losses.append(loss.numpy())
 
         i = i + 1
     

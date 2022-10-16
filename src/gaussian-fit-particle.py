@@ -31,7 +31,7 @@ EXPERIMENTS = [
 ]
 
 # for EXPERIMENT in EXPERIMENTS:
-EXPERIMENT_INDEX = 0
+EXPERIMENT_INDEX =0
 EXPERIMENT = EXPERIMENTS[EXPERIMENT_INDEX]
 
 USE_INITAL_PARAMS = True
@@ -46,7 +46,7 @@ diameters = []
 
 s2_problems = []
 
-for IMAGE_INDEX in range(config['N_IMAGES']):
+for IMAGE_INDEX in range(0,config['N_IMAGES']):
 # IMAGE_INDEX = 10
 
     print(f'IMAGE {IMAGE_INDEX}')
@@ -57,14 +57,19 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
 
     #% Resize and pre-process image
     image = preprocess_image(image, new_shape=NEW_SHAPE)
+    
+    # plt.imshow(image)
+    # plt.show()
 
     #% Fit model to image
     if USE_INITAL_PARAMS:
-        with open(f'genetic_direct_results/image{IMAGE_INDEX}.json', 'r') as fp:
+        with open(f'genetic_all_experiments/{EXPERIMENT}/image{IMAGE_INDEX}/result{IMAGE_INDEX}.json', 'r') as fp:
+        # with open(f'genetic_direct_results/image{IMAGE_INDEX}.json', 'r') as fp:
             initial_data = json.load(fp)
             initial_params = [initial_data['s2'], initial_data['p']]
             initial_radius = 1.4 * (2**4)*np.sqrt(abs(initial_params[0]))
         O, losses = fit(image, max_epoch=1000, initial_params=initial_params)
+        np.save(f'genetic_all_experiments/{EXPERIMENT}/image{IMAGE_INDEX}/gradient_loss{IMAGE_INDEX}.npy', losses)
     else:
         O, losses = fit(image, max_epoch=1000)
     O = [x.numpy() for x in O]
@@ -78,21 +83,23 @@ for IMAGE_INDEX in range(config['N_IMAGES']):
     print(f'Center: {center}')
 
     #% Present the image result
-    image0 = draw_circle(image, center, initial_radius, color=(0,255,0), thickness=1)
-    image1 = draw_circle(image, center, radius, color=(255,0,0), thickness=1)
+#     image0 = draw_circle(image, center, initial_radius, color=(0,255,0), thickness=1)
+#     image1 = draw_circle(image, center, radius, color=(255,0,0), thickness=1)
     
-    fig, ax = plt.subplots(1, 2)
-    ax[0].imshow(image0)
-    ax[0].grid(False)
-    ax[1].imshow(image1)
-    ax[1].grid(False)
+#     fig, ax = plt.subplots(1, 3)
+#     ax[0].imshow(image0)
+#     ax[0].grid(False)
+#     ax[1].imshow(image1)
+#     ax[1].grid(False)
+#     ax[2].imshow(image)
+#     ax[2].grid(False)
     
-    plt.show()
+#     plt.show()
     
-    if O[2] < 0:
-        s2_problems.append(IMAGE_INDEX)
+#     if O[2] < 0:
+#         s2_problems.append(IMAGE_INDEX)
         
-print(s2_problems)
+# print(s2_problems)
 
     #% Write radius value to CSV file
     # csv_filename = os.path.join(config['OUTPUT_PATH'], 'disks', f'disks_{IMAGE_INDEX}.csv')

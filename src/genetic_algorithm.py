@@ -87,20 +87,45 @@ def new_population(image: np.ndarray, parents: np.ndarray, fitness: np.ndarray, 
     
     return (new_pop, new_fit)
 
+EXPERIMENTS = [
+    '10-microns particles-60X',
+    'Isolada 3--3',
+    'Isolada 3--2',
+    'Isolada-2-10 um',
+    'Calibration2_Single Cell',
+    'Calibration1_Single Cell',
+    'Four-mixing particles together',
+    'Several 10-micron-particles together',
+    'Calibration 10-microns',
+    '30 microns-beads-60X-measuring 2',
+    'Calibration-1-4 Cells',
+    '3 particles_10 um',
+]
 
+experiment_index = 0
+
+RESULT_PATH = 'genetic_all_experiments'
 CONFIG_PATH = 'config'
-EXPERIMENT = 'genetic_algorithm'
+EXPERIMENT = EXPERIMENTS[experiment_index]
 CONFIG_FILENAME = os.path.join(CONFIG_PATH, EXPERIMENT + '.json')
 with open(CONFIG_FILENAME, 'r') as fp:
     config = json.load(fp)
+    
+N_IMAGES = config['N_IMAGES']
+    
+if not os.path.isdir(os.path.join(RESULT_PATH, EXPERIMENT)):
+    os.mkdir(os.path.join(RESULT_PATH, EXPERIMENT))
 
 low = 0.01
 high = 1
 individuals = 100
 genes = 2
 
-for i in range(3, 20):
+for i in range(N_IMAGES):
     print(f'Start proccess for image {i}')    
+    
+    if not os.path.isdir(os.path.join(RESULT_PATH, EXPERIMENT, f'image{i}')):
+        os.mkdir(os.path.join(RESULT_PATH, EXPERIMENT, f'image{i}'))
 
     IMAGE_INDEX = i
 
@@ -115,11 +140,17 @@ for i in range(3, 20):
 
     populationSize = (individuals,genes)
 
+
+    # initial_p = np.random.uniform(low = -1, high = high, size = (individuals, 1))
+    # initial_s2 = np.random.uniform(low = low, high = high, size = (individuals, 1))
+    # population = np.hstack([initial_p, initial_s2])
     population = np.random.uniform(low = low, high = high, size = populationSize)
 
     generations = 1000
 
     fitness = get_fitness(image, population, individuals)
+
+    data_per_generation = []
 
     init_time = perf_counter()
     for g in tqdm(range(generations)):
@@ -134,15 +165,30 @@ for i in range(3, 20):
 
         population, fitness = new_population(image, parents, fitness, children, populationSize)
         
+        data_array = np.hstack([population, fitness.reshape((fitness.shape[0], 1))])
+        
+        data_per_generation.append(
+            data_array
+        )
+        
         # print(f'Generation {g} finished\n')
         
     print(f'Executed in {int(round( (perf_counter() - init_time)/60 ))} minutes')
     print('Saving results to JSON')
 
     population, fitness = order_by_fitness(population, fitness)
+    
+    data_array = np.hstack([population, fitness.reshape((fitness.shape[0], 1))])
+        
+    data_per_generation.append(
+        data_array
+    )
+    
+    data_per_generation = np.array(data_per_generation)
+    np.save(os.path.join(RESULT_PATH, EXPERIMENT, f'image{IMAGE_INDEX}',f'data{IMAGE_INDEX}.npy'), data_per_generation)
 
-    with open(f'genetic_direct_results/image{IMAGE_INDEX}.json', 'w') as fp:
-        _ = json.dump(
+    with open(os.path.join(RESULT_PATH, EXPERIMENT, f'image{IMAGE_INDEX}',f'result{IMAGE_INDEX}.json'), 'w') as fp:
+        json.dump(
             {
                 's2': population[0, 0],
                 'p': population[0, 1],
